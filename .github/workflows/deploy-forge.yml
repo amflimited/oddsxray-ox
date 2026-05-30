@@ -7,8 +7,6 @@ on:
     paths:
       - 'forge-current.sh'
       - 'forge-*.sh'
-      - 'server.js'
-      - 'index.html'
       - 'data/**'
       - '.github/workflows/deploy-forge.yml'
   workflow_dispatch:
