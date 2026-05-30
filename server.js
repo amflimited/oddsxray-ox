@@ -4,28 +4,80 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const port = process.env.PORT || 3000;
-const build = "OX-009B";
+const build = "OX-009C";
 const expectedForgeBuild = "FORGE-006A";
 const forgeHost = "forge.oddsxray.com";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const indexPath = path.join(__dirname, "index.html");
 
-const forgeBootstrapScript = `#!/usr/bin/env bash
-set -e
-mkdir -p /opt/oddsxray-forge/bin /var/log/oddsxray-forge
-cat > /usr/local/bin/forgeup <<'UP'
+const forgeSelfPullScript = `#!/usr/bin/env bash
+set -euo pipefail
+mkdir -p /var/log/oddsxray-forge /opt/oddsxray-forge/bin
+cat > /usr/local/bin/forgepull <<'PULL'
 #!/usr/bin/env bash
-set -e
-LOG=/var/log/oddsxray-forge/forgeup.log
-mkdir -p /var/log/oddsxray-forge
-echo "[$(date -Is)] forgeup start" | tee -a "$LOG"
-curl -fsSL https://ox.oddsxray.com/forge-current.sh | bash 2>&1 | tee -a "$LOG"
-echo "[$(date -Is)] forgeup done" | tee -a "$LOG"
-UP
-chmod +x /usr/local/bin/forgeup
-/usr/local/bin/forgeup
-echo "Forge updater installed. Future manual updates: forgeup"
+set -euo pipefail
+LOG=/var/log/oddsxray-forge/forgepull.log
+TMP=$(mktemp /tmp/forge-current.XXXXXX.sh)
+cleanup(){ rm -f "$TMP"; }
+trap cleanup EXIT
+echo "[$(date -Is)] forgepull check" >> "$LOG"
+curl -fsSL "http://ox.oddsxray.com/forge-current.sh?pull=$(date +%s)" -o "$TMP"
+chmod +x "$TMP"
+TARGET=$(grep -m1 '^BUILD=' "$TMP" | sed -E 's/^BUILD="?([^" ]+)"?/\1/' || true)
+CURRENT=$(curl -fsS http://127.0.0.1:3001/health 2>/dev/null | sed -nE 's/.*"build"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' || true)
+if [ -z "$TARGET" ]; then
+  echo "[$(date -Is)] no target build found in package" >> "$LOG"
+  exit 2
+fi
+if [ "$TARGET" = "$CURRENT" ]; then
+  echo "[$(date -Is)] current=$CURRENT target=$TARGET no-op" >> "$LOG"
+  exit 0
+fi
+echo "[$(date -Is)] updating current=${CURRENT:-none} target=$TARGET" >> "$LOG"
+bash "$TMP" >> "$LOG" 2>&1
+AFTER=$(curl -fsS http://127.0.0.1:3001/health 2>/dev/null | sed -nE 's/.*"build"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' || true)
+echo "[$(date -Is)] after=$AFTER" >> "$LOG"
+test "$AFTER" = "$TARGET"
+PULL
+chmod +x /usr/local/bin/forgepull
+cat > /etc/systemd/system/oddsxray-forge-pull.service <<'UNIT'
+[Unit]
+Description=Odds X-Ray Forge self-pull updater
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/forgepull
+UNIT
+cat > /etc/systemd/system/oddsxray-forge-pull.timer <<'UNIT'
+[Unit]
+Description=Run Odds X-Ray Forge self-pull updater every minute
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=60s
+RandomizedDelaySec=8s
+Persistent=true
+Unit=oddsxray-forge-pull.service
+
+[Install]
+WantedBy=timers.target
+UNIT
+systemctl daemon-reload
+systemctl enable --now oddsxray-forge-pull.timer >/dev/null
+systemctl start oddsxray-forge-pull.service || true
+echo "Forge self-pull updater installed."
+echo "Manual update: forgepull"
+echo "Log: /var/log/oddsxray-forge/forgepull.log"
+systemctl list-timers oddsxray-forge-pull.timer --no-pager || true
+`;
+
+const forgeBootstrapScript = `#!/usr/bin/env bash
+set -euo pipefail
+curl -fsSL http://ox.oddsxray.com/forge-selfpull-install.sh | bash
+forgepull
 `;
 
 const sendJson = (res, status, body) => { res.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }); res.end(JSON.stringify(body, null, 2)); };
@@ -55,9 +107,11 @@ const proxyForge = (forgePath, method = "GET", body = "") => new Promise((resolv
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   if (url.pathname === "/f" || url.pathname === "/forgeup") return sendText(res, 200, forgeBootstrapScript, "text/x-shellscript; charset=utf-8");
+  if (url.pathname === "/forge-selfpull-install.sh" || url.pathname === "/forge-selfpull") return sendText(res, 200, forgeSelfPullScript, "text/x-shellscript; charset=utf-8");
   if (url.pathname === "/forge-current.sh" || url.pathname === "/forge-current") return serveRepoFile(res, "forge-current.sh", "text/x-shellscript; charset=utf-8");
-  if (url.pathname === "/health") return sendJson(res, 200, { ok: true, app: "Odds X-Ray", layer: "The Ox", build, status: "online", expected_forge_build: expectedForgeBuild, forge_proxy: "/api/forge/health", packages: "/api/packages", forge_current: "/forge-current.sh" });
-  if (url.pathname === "/api/packages") { const out = await proxyForge("/health"); return sendJson(res, 200, { ok: true, ox: { app: "Odds X-Ray", layer: "The Ox", build, status: "online" }, forge: out.body, expected: { ox_build: build, forge_build: expectedForgeBuild }, forge_status_code: out.status }); }
+  if (url.pathname === "/api/deploy-target") return sendJson(res, 200, { ok: true, ox_build: build, forge_build: expectedForgeBuild, forge_current: "/forge-current.sh", forge_selfpull_install: "/forge-selfpull-install.sh" });
+  if (url.pathname === "/health") return sendJson(res, 200, { ok: true, app: "Odds X-Ray", layer: "The Ox", build, status: "online", expected_forge_build: expectedForgeBuild, forge_proxy: "/api/forge/health", packages: "/api/packages", deploy_target: "/api/deploy-target", forge_current: "/forge-current.sh", forge_selfpull_install: "/forge-selfpull-install.sh" });
+  if (url.pathname === "/api/packages") { const out = await proxyForge("/health"); return sendJson(res, 200, { ok: true, ox: { app: "Odds X-Ray", layer: "The Ox", build, status: "online" }, forge: out.body, expected: { ox_build: build, forge_build: expectedForgeBuild }, deploy: { mode: "forge-self-pull", interval_seconds: 60, install: "curl -fsSL ox.oddsxray.com/forge-selfpull-install.sh|bash" }, forge_status_code: out.status }); }
   if (url.pathname === "/api/forge/health") { const out = await proxyForge("/health"); return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, expected_forge_build: expectedForgeBuild, proxied_from: "The Forge", forge: out.body }); }
   if (req.method === "GET" && url.pathname === "/api/forge/catalog") { const out = await proxyForge("/api/catalog"); return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body }); }
   if (req.method === "GET" && url.pathname === "/api/forge/scenarios") { const out = await proxyForge("/api/scenarios"); return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body }); }
