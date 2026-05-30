@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const port = process.env.PORT || 3000;
-const build = "OX-009D";
+const build = "OX-009E";
 const expectedForgeBuild = "FORGE-006A";
 const forgeHost = "forge.oddsxray.com";
 const __filename = fileURLToPath(import.meta.url);
@@ -24,8 +24,8 @@ trap cleanup EXIT
 echo "[$(date -Is)] forgepull check" >> "$LOG"
 curl -fsSL "http://ox.oddsxray.com/forge-current.sh?pull=$(date +%s)" -o "$TMP"
 chmod +x "$TMP"
-TARGET=$(grep -m1 '^BUILD=' "$TMP" | sed -E 's/^BUILD="?([^" ]+)"?/\1/' || true)
-CURRENT=$(curl -fsS http://127.0.0.1:3001/health 2>/dev/null | sed -nE 's/.*"build"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' || true)
+TARGET=$(grep -m1 '^BUILD=' "$TMP" | cut -d'"' -f2 || true)
+CURRENT=$(curl -fsS http://127.0.0.1:3001/health 2>/dev/null | grep -o '"build"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | cut -d'"' -f4 || true)
 if [ -z "$TARGET" ]; then
   echo "[$(date -Is)] no target build found in package" >> "$LOG"
   exit 2
@@ -36,7 +36,7 @@ if [ "$TARGET" = "$CURRENT" ]; then
 fi
 echo "[$(date -Is)] updating current=\${CURRENT:-none} target=$TARGET" >> "$LOG"
 bash "$TMP" >> "$LOG" 2>&1
-AFTER=$(curl -fsS http://127.0.0.1:3001/health 2>/dev/null | sed -nE 's/.*"build"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' || true)
+AFTER=$(curl -fsS http://127.0.0.1:3001/health 2>/dev/null | grep -o '"build"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | cut -d'"' -f4 || true)
 echo "[$(date -Is)] after=$AFTER" >> "$LOG"
 test "$AFTER" = "$TARGET"
 PULL
