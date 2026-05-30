@@ -7,6 +7,7 @@ const port = process.env.PORT || 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const indexPath = path.join(__dirname, "index.html");
+const build = "OX-001E";
 
 const json = (res, status, body) => {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
@@ -26,19 +27,20 @@ const server = http.createServer((req, res) => {
       ok: true,
       app: "Odds X-Ray",
       layer: "The Ox",
-      build: "OX-001C",
-      status: "online"
+      build,
+      status: "online",
+      deployment_test: "auto-deploy-check"
     });
   }
 
   if (url.pathname === "/app" || url.pathname === "/app/" || url.pathname === "/app/products" || url.pathname === "/app/second-stake" || url.pathname === "/app/second-stake/scenarios/green-number-trap" || url.pathname === "/") {
-    const page = fs.readFileSync(indexPath, "utf8");
+    const page = fs.readFileSync(indexPath, "utf8").replaceAll("OX-001", build);
     return html(res, 200, page);
   }
 
-  return json(res, 404, { ok: false, error: "Route not found", build: "OX-001C" });
+  return json(res, 404, { ok: false, error: "Route not found", build });
 });
 
 server.listen(port, "0.0.0.0", () => {
-  console.log(`The Ox running on port ${port}`);
+  console.log(`The Ox ${build} running on port ${port}`);
 });
