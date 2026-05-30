@@ -4,8 +4,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const port = process.env.PORT || 3000;
-const build = "OX-009E";
-const expectedForgeBuild = "FORGE-006A";
+const build = "OX-010B";
+const expectedForgeBuild = "FORGE-007A";
 const forgeHost = "forge.oddsxray.com";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -134,15 +134,13 @@ const server = http.createServer(async (req, res) => {
     const out = await proxyForge("/health");
     return sendJson(res, 200, { ok: true, ox: { app: "Odds X-Ray", layer: "The Ox", build, status: "online" }, forge: out.body, expected: { ox_build: build, forge_build: expectedForgeBuild }, deploy: { mode: "forge-self-pull", interval_seconds: 60, install: "curl -fsSL ox.oddsxray.com/forge-selfpull-install.sh|bash" }, forge_status_code: out.status });
   }
-  if (url.pathname === "/api/forge/health") {
-    const out = await proxyForge("/health");
-    return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, expected_forge_build: expectedForgeBuild, proxied_from: "The Forge", forge: out.body });
-  }
+  if (url.pathname === "/api/forge/health") { const out = await proxyForge("/health"); return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, expected_forge_build: expectedForgeBuild, proxied_from: "The Forge", forge: out.body }); }
   if (req.method === "GET" && url.pathname === "/api/forge/catalog") { const out = await proxyForge("/api/catalog"); return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body }); }
   if (req.method === "GET" && url.pathname === "/api/forge/scenarios") { const out = await proxyForge("/api/scenarios"); return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body }); }
   if (req.method === "GET" && url.pathname.startsWith("/api/forge/scenarios/")) { const id = url.pathname.split("/").pop(); const out = await proxyForge(`/api/scenarios/${encodeURIComponent(id)}`); return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body }); }
   if (req.method === "POST" && url.pathname === "/api/forge/attempts") { const body = await readBody(req); const out = await proxyForge("/api/attempts", "POST", body || "{}"); return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body }); }
   if (req.method === "GET" && url.pathname === "/api/forge/attempts") { const out = await proxyForge("/api/attempts"); return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body }); }
+  if (req.method === "POST" && url.pathname.match(/^\/api\/forge\/attempts\/[^/]+\/evidence$/)) { const attemptId = url.pathname.split("/")[4]; const body = await readBody(req); const out = await proxyForge(`/api/attempts/${encodeURIComponent(attemptId)}/evidence`, "POST", body || "{}"); return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body }); }
   if (req.method === "POST" && url.pathname.match(/^\/api\/forge\/attempts\/[^/]+\/choice$/)) { const attemptId = url.pathname.split("/")[4]; const body = await readBody(req); const out = await proxyForge(`/api/attempts/${encodeURIComponent(attemptId)}/choice`, "POST", body || "{}"); return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body }); }
   if (req.method === "GET" && url.pathname.match(/^\/api\/forge\/attempts\/[^/]+$/)) { const attemptId = url.pathname.split("/").pop(); const out = await proxyForge(`/api/attempts/${encodeURIComponent(attemptId)}`); return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body }); }
   if (req.method === "GET" && url.pathname === "/api/forge/progress") { const out = await proxyForge("/api/progress"); return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body }); }
