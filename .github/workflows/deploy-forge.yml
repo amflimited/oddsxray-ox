@@ -1,0 +1,42 @@
+name: Deploy Forge
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'forge-current.sh'
+      - 'forge-*.sh'
+      - 'server.js'
+      - 'index.html'
+      - 'data/**'
+      - '.github/workflows/deploy-forge.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-forge
+  cancel-in-progress: true
+
+jobs:
+  deploy-forge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      FORGE_HOST: 209.74.83.238
+      FORGE_USER: root
+    steps:
+      - name: Install sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+
+      - name: Run forgeup on Forge VM
+        env:
+          FORGE_PASSWORD: ${{ secrets.FORGE_PASSWORD }}
+        run: |
+          test -n "$FORGE_PASSWORD"
+          sshpass -p "$FORGE_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            "$FORGE_USER@$FORGE_HOST" \
+            'forgeup && curl -s http://127.0.0.1:3001/health'
