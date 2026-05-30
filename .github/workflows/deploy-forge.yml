@@ -29,7 +29,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y sshpass
 
-      - name: Run forgeup on Forge VM
+      - name: Install current Forge package on Forge VM
         env:
           FORGE_PASSWORD: ${{ secrets.FORGE_PASSWORD }}
         run: |
@@ -39,4 +39,4 @@ jobs:
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
             "$FORGE_USER@$FORGE_HOST" \
-            'forgeup && systemctl disable --now odx-forge-update.timer >/dev/null 2>&1 || true; curl -s http://127.0.0.1:3001/health'
+            'set -e; curl -fsSL http://ox.oddsxray.com/forge-current.sh?deploy=$(date +%s) | bash; systemctl disable --now odx-forge-update.timer >/dev/null 2>&1 || true; curl -s http://127.0.0.1:3001/health'
