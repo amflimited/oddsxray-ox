@@ -3,26 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Odds X-Ray The Ox</title>
+  <title>Odds X-Ray · The Ox</title>
   <style>
-    body{margin:0;background:#050609;color:#f6f0db;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
-    .shell{max-width:980px;margin:0 auto;padding:30px 18px}
-    .panel{border:1px solid rgba(255,255,255,.14);border-radius:28px;background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.025));padding:34px;box-shadow:0 30px 90px #000}
-    .stripe{height:16px;border-radius:999px;background:linear-gradient(90deg,#f0332f 0 22%,#ffdf59 22% 50%,#25d366 50% 72%,#3482ff 72%);margin-bottom:24px}
-    h1{font-size:clamp(48px,8vw,86px);line-height:.9;letter-spacing:-.06em;margin:0 0 22px}
-    .lede{font-size:clamp(20px,3vw,31px);color:rgba(246,240,219,.72);line-height:1.25}
-    .button{display:inline-block;margin-top:24px;border-radius:999px;background:#ffdf59;color:#080808;padding:14px 18px;font-weight:900;text-decoration:none}
+    :root{color-scheme:dark;--bg:#050609;--panel:rgba(18,20,27,.88);--line:rgba(255,255,255,.14);--text:#f6f0db;--muted:rgba(246,240,219,.68);--red:#f0332f;--yellow:#ffdf59;--green:#25d366;--blue:#3482ff}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 12% 5%,rgba(240,51,47,.22),transparent 32%),radial-gradient(circle at 88% 10%,rgba(52,130,255,.20),transparent 30%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}a{color:inherit;text-decoration:none}.shell{width:min(1120px,calc(100% - 28px));margin:0 auto;padding:24px 0 36px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}.brand{display:flex;align-items:center;gap:12px}.mark{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#fff6ce 0 48%,var(--red) 49%);color:#080808;display:grid;place-items:center;font-weight:950;box-shadow:12px 12px 0 rgba(52,130,255,.18)}.brand b,.brand em{display:block}.brand em{font-style:normal;color:var(--muted);font-size:13px}.nav{display:flex;gap:10px;flex-wrap:wrap}.nav a,.button{border:1px solid var(--line);border-radius:999px;padding:11px 14px;background:rgba(255,255,255,.04);font-weight:800}.button.primary{background:var(--yellow);color:#080808;border-color:rgba(255,223,89,.8)}.panel{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:32px;background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.025)),var(--panel);box-shadow:0 30px 90px rgba(0,0,0,.55);padding:clamp(24px,5vw,54px);margin-bottom:18px}.panel:after{content:"";position:absolute;inset:auto -10% -12% -10%;height:140px;background:linear-gradient(110deg,transparent 0 14%,rgba(52,130,255,.40) 15% 32%,transparent 33% 47%,rgba(240,51,47,.45) 48% 61%,rgba(255,223,89,.26) 62% 73%,rgba(37,211,102,.25) 74% 88%,transparent 89%);opacity:.30;pointer-events:none}.stripe{height:16px;border-radius:999px;background:linear-gradient(90deg,var(--red) 0 22%,var(--yellow) 22% 50%,var(--green) 50% 72%,var(--blue) 72%);margin-bottom:24px}.eyebrow{text-transform:uppercase;letter-spacing:.20em;color:var(--yellow);font-weight:950;font-size:12px}h1{font-size:clamp(44px,8vw,88px);line-height:.9;letter-spacing:-.07em;margin:8px 0 20px}.lede{font-size:clamp(19px,3vw,31px);line-height:1.25;color:var(--muted);max-width:880px}.copy{font-size:18px;line-height:1.55;color:var(--muted);max-width:880px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:26px}.card,.choice{border:1px solid var(--line);border-radius:22px;background:rgba(0,0,0,.24);padding:18px;text-align:left}.card small{display:block;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);font-weight:900}.card strong{display:block;font-size:25px;margin:8px 0}.choice{width:100%;color:var(--text);font:inherit;cursor:pointer}.choice:hover{border-color:rgba(255,223,89,.7);background:rgba(255,223,89,.08)}.result{border-left:7px solid var(--red);padding-left:18px}.scar{display:inline-block;margin-top:12px;border-radius:16px;background:rgba(255,223,89,.12);border:1px solid rgba(255,223,89,.35);padding:14px 16px;color:#fff6ce;font-weight:900}.status{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:rgba(246,240,219,.55);font-size:13px;margin-top:18px}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}footer{display:flex;justify-content:space-between;gap:12px;color:rgba(246,240,219,.45);font-size:13px;padding:16px 4px}@media(max-width:760px){.nav{display:none}.panel{border-radius:26px}.mark{width:46px;height:46px}h1{font-size:52px}.lede{font-size:22px}}
   </style>
 </head>
 <body>
   <main class="shell">
-    <section class="panel">
-      <div class="stripe"></div>
-      <p>THE OX · HYPERLIFT APP LAYER</p>
-      <h1>Odds X-Ray has a real app home.</h1>
-      <p class="lede">OX-001 replaces the placeholder with the member product shell for Second Stake scenarios, future modules, saved progress, and Forge-connected decision training.</p>
-      <a class="button" href="/health">Check health</a>
-    </section>
+    <header class="topbar"><a class="brand" href="/"><span class="mark">OX</span><span><b>Odds X-Ray</b><em>The Ox</em></span></a><nav class="nav"><a href="/app">App</a><a href="/app/products">Products</a><a href="/app/second-stake">Second Stake</a><a href="/health">Health</a></nav></header>
+    <div id="app"></div>
+    <footer><b>OX-003</b><span>The Site sells. The Ox trains. The Forge remembers.</span></footer>
   </main>
+  <script>
+    const app=document.getElementById('app');
+    const path=location.pathname.replace(/\/$/,'')||'/';
+    const page=(html)=>{app.innerHTML=html};
+    const shell=(eyebrow,title,lede,body='')=>`<section class="panel"><div class="stripe"></div><p class="eyebrow">${eyebrow}</p><h1>${title}</h1><p class="lede">${lede}</p>${body}</section>`;
+    function home(){page(shell('The Ox · Hyperlift app layer','Odds X-Ray has a real app home.','OX-003 connects the member product shell to The Forge scenario source.','<div class="actions"><a class="button primary" href="/app/second-stake/scenarios/green-number-trap">Open Green Number Trap</a><a class="button" href="/api/forge/health">Check Forge Proxy</a></div><div class="grid"><div class="card"><small>Layer</small><strong>The Ox</strong><p class="copy">Customer-facing product experience.</p></div><div class="card"><small>Build</small><strong>OX-003</strong><p class="copy">Scenario player UI.</p></div><div class="card"><small>Forge</small><strong>Connected</strong><p class="copy">Scenario data served through the Ox proxy.</p></div></div>'))}
+    function products(){page(shell('Odds X-Ray Library','Products are modules, not one giant course.','Second Stake is Product 001. Future modules can sit beside it without changing the platform.','<div class="grid"><a class="card" href="/app/second-stake"><small>Product 001</small><strong>Second Stake</strong><p class="copy">Ten brutal interactive scenarios that make the first-loss lesson hurt enough to remember.</p></a><div class="card"><small>Future module</small><strong>Cash-Out Scars</strong><p class="copy">Exit windows, greed, partial sells, and one more tick.</p></div><div class="card"><small>Future module</small><strong>Headline Poison</strong><p class="copy">When the story was right but the contract paid something else.</p></div></div>'))}
+    function secondStake(){page(shell('Product 001','Second Stake','A ten-scenario burn course for people who already got cooked once.','<p class="copy">No play-money stockbroker cosplay. Second Stake is controlled pain: choice, consequence, diagnosis, scar lesson.</p><div class="actions"><a class="button primary" href="/app/second-stake/scenarios/green-number-trap">Start The Green Number Trap</a><a class="button" href="/api/forge/scenarios">View Forge Source</a></div>'))}
+    async function scenario(){
+      page(shell('Second Stake · Scenario 01','Loading The Green Number Trap','The Ox is asking The Forge for the scenario source.','<p class="status">GET /api/forge/scenarios/green-number-trap</p>'));
+      try{
+        const r=await fetch('/api/forge/scenarios/green-number-trap',{cache:'no-store'}); const data=await r.json();
+        const scenario=data.forge?.scenario||data.scenario; if(!scenario) throw new Error('Scenario missing from Forge response');
+        const nodes=Object.fromEntries((scenario.nodes||[]).map(n=>[n.id,n]));
+        const renderNode=(id)=>{
+          const n=nodes[id]; if(!n){page(shell('Scenario error','Node missing',id));return;}
+          if(n.choices){
+            page(shell('Second Stake · Scenario 01',scenario.title,n.prompt,`<div class="grid">${n.choices.map(c=>`<button class="choice" data-next="${c.next}"><strong>${c.label}</strong></button>`).join('')}</div><p class="scar">${scenario.scar}</p><p class="status">Source: The Forge · ${data.forge?.build||data.build||'FORGE'}</p>`));
+            document.querySelectorAll('[data-next]').forEach(b=>b.onclick=()=>renderNode(b.dataset.next));
+          }else{
+            page(shell('Consequence',scenario.title,n.result||'Outcome reached.',`<div class="result"><p class="copy"><b>Diagnosis:</b> ${n.diagnosis||'No diagnosis supplied.'}</p><p class="scar">${n.scar||scenario.scar}</p></div><div class="actions"><button class="button primary" id="restart">Run it again</button><a class="button" href="/app/second-stake">Back to Second Stake</a></div><p class="status">Decision chain saving comes next: OX-004 / Forge attempts.</p>`));
+            document.getElementById('restart').onclick=()=>renderNode('start');
+          }
+        };
+        renderNode('start');
+      }catch(e){page(shell('Forge connection failed','The scenario did not load.',String(e.message||e),'<div class="actions"><a class="button" href="/api/forge/scenarios/green-number-trap">Open raw Forge proxy</a></div>'))}
+    }
+    function route(){ if(path==='/')return home(); if(path==='/app')return home(); if(path==='/app/products')return products(); if(path==='/app/second-stake')return secondStake(); if(path==='/app/second-stake/scenarios/green-number-trap')return scenario(); return home(); }
+    route();
+  </script>
 </body>
 </html>
