@@ -23,6 +23,7 @@ jobs:
     timeout-minutes: 8
     env:
       FORGE_HOST: 209.74.83.238
+      FORGE_PORT: 22022
       FORGE_USER: root
     steps:
       - name: Install sshpass
@@ -36,6 +37,7 @@ jobs:
         run: |
           test -n "$FORGE_PASSWORD"
           sshpass -p "$FORGE_PASSWORD" ssh \
+            -p "$FORGE_PORT" \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
             "$FORGE_USER@$FORGE_HOST" \
