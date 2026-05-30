@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const port = process.env.PORT || 3000;
-const build = "OX-002";
+const build = "OX-004";
 const forgeHost = "forge.oddsxray.com";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,8 +20,20 @@ const sendHtml = (res, status, body) => {
   res.end(body);
 };
 
-const fetchForge = (forgePath) => new Promise((resolve) => {
-  const req = http.request({ hostname: forgeHost, port: 80, path: forgePath, method: "GET", timeout: 5000 }, (forgeRes) => {
+const readBody = (req) => new Promise((resolve) => {
+  let data = "";
+  req.on("data", chunk => data += chunk);
+  req.on("end", () => resolve(data));
+});
+
+const proxyForge = (forgePath, method = "GET", body = "") => new Promise((resolve) => {
+  const headers = { "accept": "application/json" };
+  if (body) {
+    headers["content-type"] = "application/json";
+    headers["content-length"] = Buffer.byteLength(body);
+  }
+
+  const req = http.request({ hostname: forgeHost, port: 80, path: forgePath, method, headers, timeout: 6000 }, (forgeRes) => {
     let data = "";
     forgeRes.on("data", chunk => data += chunk);
     forgeRes.on("end", () => {
@@ -34,6 +46,7 @@ const fetchForge = (forgePath) => new Promise((resolve) => {
   });
   req.on("timeout", () => { req.destroy(); resolve({ status: 504, body: { ok: false, error: "Forge timeout" } }); });
   req.on("error", err => resolve({ status: 502, body: { ok: false, error: "Forge proxy error", detail: err.message } }));
+  if (body) req.write(body);
   req.end();
 });
 
@@ -45,23 +58,52 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname === "/api/forge/health") {
-    const out = await fetchForge("/health");
+    const out = await proxyForge("/health", "GET");
     return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body });
   }
 
-  if (url.pathname === "/api/forge/scenarios") {
-    const out = await fetchForge("/api/scenarios");
+  if (req.method === "GET" && url.pathname === "/api/forge/scenarios") {
+    const out = await proxyForge("/api/scenarios", "GET");
     return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body });
   }
 
-  if (url.pathname.startsWith("/api/forge/scenarios/")) {
+  if (req.method === "GET" && url.pathname.startsWith("/api/forge/scenarios/")) {
     const id = url.pathname.split("/").pop();
-    const out = await fetchForge(`/api/scenarios/${encodeURIComponent(id)}`);
+    const out = await proxyForge(`/api/scenarios/${encodeURIComponent(id)}`, "GET");
     return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body });
   }
 
-  if (url.pathname === "/app" || url.pathname === "/app/" || url.pathname === "/app/products" || url.pathname === "/app/second-stake" || url.pathname === "/app/second-stake/scenarios/green-number-trap" || url.pathname === "/") {
-    const page = fs.readFileSync(indexPath, "utf8").replaceAll("OX-001", build).replaceAll("OX-001E", build);
+  if (req.method === "POST" && url.pathname === "/api/forge/attempts") {
+    const body = await readBody(req);
+    const out = await proxyForge("/api/attempts", "POST", body || "{}");
+    return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/forge/attempts") {
+    const out = await proxyForge("/api/attempts", "GET");
+    return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body });
+  }
+
+  if (req.method === "POST" && url.pathname.match(/^\/api\/forge\/attempts\/[^/]+\/choice$/)) {
+    const attemptId = url.pathname.split("/")[4];
+    const body = await readBody(req);
+    const out = await proxyForge(`/api/attempts/${encodeURIComponent(attemptId)}/choice`, "POST", body || "{}");
+    return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body });
+  }
+
+  if (req.method === "GET" && url.pathname.match(/^\/api\/forge\/attempts\/[^/]+$/)) {
+    const attemptId = url.pathname.split("/").pop();
+    const out = await proxyForge(`/api/attempts/${encodeURIComponent(attemptId)}`, "GET");
+    return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/forge/progress") {
+    const out = await proxyForge("/api/progress", "GET");
+    return sendJson(res, out.status, { ok: out.status < 400, ox_build: build, proxied_from: "The Forge", forge: out.body });
+  }
+
+  if (url.pathname === "/app" || url.pathname === "/app/" || url.pathname === "/app/products" || url.pathname === "/app/second-stake" || url.pathname === "/app/second-stake/scenarios/green-number-trap" || url.pathname === "/app/history" || url.pathname === "/") {
+    const page = fs.readFileSync(indexPath, "utf8").replaceAll("OX-001", build).replaceAll("OX-001E", build).replaceAll("OX-002", build).replaceAll("OX-003", build);
     return sendHtml(res, 200, page);
   }
 
