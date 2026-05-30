@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const port = process.env.PORT || 3000;
-const build = "OX-004F";
+const build = "OX-004G";
 const forgeHost = "forge.oddsxray.com";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,7 +21,7 @@ set -e
 LOG=/var/log/oddsxray-forge/forgeup.log
 mkdir -p /var/log/oddsxray-forge
 echo "[$(date -Is)] forgeup start" | tee -a "$LOG"
-curl -fsSL https://raw.githubusercontent.com/amflimited/oddsxray-ox/main/forge-current.sh | bash 2>&1 | tee -a "$LOG"
+curl -fsSL https://ox.oddsxray.com/forge-current.sh | bash 2>&1 | tee -a "$LOG"
 echo "[$(date -Is)] forgeup done" | tee -a "$LOG"
 UP
 chmod +x /usr/local/bin/forgeup
@@ -73,6 +73,15 @@ const sendHtml = (res, status, body) => {
   res.end(body);
 };
 
+const serveScriptFile = (res, fileName) => {
+  const safe = path.basename(fileName);
+  const fullPath = path.join(__dirname, safe);
+  if (!fs.existsSync(fullPath)) {
+    return sendText(res, 404, `#!/usr/bin/env bash\necho 'Missing script: ${safe}'\nexit 1\n`, "text/x-shellscript; charset=utf-8");
+  }
+  return sendText(res, 200, fs.readFileSync(fullPath, "utf8"), "text/x-shellscript; charset=utf-8");
+};
+
 const readBody = (req) => new Promise((resolve) => {
   let data = "";
   req.on("data", chunk => data += chunk);
@@ -110,8 +119,16 @@ const server = http.createServer(async (req, res) => {
     return sendText(res, 200, forgeBootstrapScript, "text/x-shellscript; charset=utf-8");
   }
 
+  if (url.pathname === "/forge-current.sh" || url.pathname === "/forge-current") {
+    return serveScriptFile(res, "forge-current.sh");
+  }
+
+  if (url.pathname === "/forge-002.sh") {
+    return serveScriptFile(res, "forge-002.sh");
+  }
+
   if (url.pathname === "/health") {
-    return sendJson(res, 200, { ok: true, app: "Odds X-Ray", layer: "The Ox", build, status: "online", forge_proxy: "/api/forge/health", forge_bootstrap: "/f" });
+    return sendJson(res, 200, { ok: true, app: "Odds X-Ray", layer: "The Ox", build, status: "online", forge_proxy: "/api/forge/health", forge_bootstrap: "/f", forge_current: "/forge-current.sh" });
   }
 
   if (url.pathname === "/api/forge/health") {
