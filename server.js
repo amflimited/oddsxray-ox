@@ -4,15 +4,68 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const port = process.env.PORT || 3000;
-const build = "OX-004";
+const build = "OX-004F";
 const forgeHost = "forge.oddsxray.com";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const indexPath = path.join(__dirname, "index.html");
 
+const forgeBootstrapScript = `#!/usr/bin/env bash
+set -e
+
+mkdir -p /opt/oddsxray-forge/bin /var/log/oddsxray-forge
+
+cat > /usr/local/bin/forgeup <<'UP'
+#!/usr/bin/env bash
+set -e
+LOG=/var/log/oddsxray-forge/forgeup.log
+mkdir -p /var/log/oddsxray-forge
+echo "[$(date -Is)] forgeup start" | tee -a "$LOG"
+curl -fsSL https://raw.githubusercontent.com/amflimited/oddsxray-ox/main/forge-current.sh | bash 2>&1 | tee -a "$LOG"
+echo "[$(date -Is)] forgeup done" | tee -a "$LOG"
+UP
+chmod +x /usr/local/bin/forgeup
+
+cat > /etc/systemd/system/odx-forge-update.service <<'SERVICE'
+[Unit]
+Description=Odds X-Ray Forge update runner
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/forgeup
+SERVICE
+
+cat > /etc/systemd/system/odx-forge-update.timer <<'TIMER'
+[Unit]
+Description=Run Odds X-Ray Forge updater every 10 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+TIMER
+
+systemctl daemon-reload
+systemctl enable --now odx-forge-update.timer
+/usr/local/bin/forgeup
+
+echo "Forge updater installed. Future manual updates: forgeup"
+echo "Auto updates: systemd timer odx-forge-update.timer"
+`;
+
 const sendJson = (res, status, body) => {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(body, null, 2));
+};
+
+const sendText = (res, status, body, contentType = "text/plain; charset=utf-8") => {
+  res.writeHead(status, { "content-type": contentType, "cache-control": "no-store" });
+  res.end(body);
 };
 
 const sendHtml = (res, status, body) => {
@@ -53,8 +106,12 @@ const proxyForge = (forgePath, method = "GET", body = "") => new Promise((resolv
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
 
+  if (url.pathname === "/f" || url.pathname === "/forgeup") {
+    return sendText(res, 200, forgeBootstrapScript, "text/x-shellscript; charset=utf-8");
+  }
+
   if (url.pathname === "/health") {
-    return sendJson(res, 200, { ok: true, app: "Odds X-Ray", layer: "The Ox", build, status: "online", forge_proxy: "/api/forge/health" });
+    return sendJson(res, 200, { ok: true, app: "Odds X-Ray", layer: "The Ox", build, status: "online", forge_proxy: "/api/forge/health", forge_bootstrap: "/f" });
   }
 
   if (url.pathname === "/api/forge/health") {
@@ -103,7 +160,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname === "/app" || url.pathname === "/app/" || url.pathname === "/app/products" || url.pathname === "/app/second-stake" || url.pathname === "/app/second-stake/scenarios/green-number-trap" || url.pathname === "/app/history" || url.pathname === "/") {
-    const page = fs.readFileSync(indexPath, "utf8").replaceAll("OX-001", build).replaceAll("OX-001E", build).replaceAll("OX-002", build).replaceAll("OX-003", build);
+    const page = fs.readFileSync(indexPath, "utf8").replaceAll("OX-001", build).replaceAll("OX-001E", build).replaceAll("OX-002", build).replaceAll("OX-003", build).replaceAll("OX-004", build);
     return sendHtml(res, 200, page);
   }
 
