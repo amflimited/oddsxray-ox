@@ -41,4 +41,4 @@ jobs:
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
             "$FORGE_USER@$FORGE_HOST" \
-            'forgeup && curl -s http://127.0.0.1:3001/health'
+            'forgeup && systemctl disable --now odx-forge-update.timer >/dev/null 2>&1 || true; curl -s http://127.0.0.1:3001/health'
