@@ -1,42 +1,38 @@
-name: Deploy Forge
+name: Validate Ox Runtime
 
 on:
   push:
     branches:
       - main
-    paths:
-      - 'forge-current.sh'
-      - 'forge-*.sh'
-      - 'data/**'
-      - '.github/workflows/deploy-forge.yml'
   workflow_dispatch:
 
 concurrency:
-  group: deploy-forge
+  group: validate-ox-runtime
   cancel-in-progress: true
 
 jobs:
-  deploy-forge:
+  validate-ox-runtime:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
-    env:
-      FORGE_HOST: 209.74.83.238
-      FORGE_PORT: 22022
-      FORGE_USER: root
+    timeout-minutes: 5
     steps:
-      - name: Install sshpass
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y sshpass
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Install current Forge package on Forge VM
-        env:
-          FORGE_PASSWORD: ${{ secrets.FORGE_PASSWORD }}
+      - name: Show Node version
+        run: node --version
+
+      - name: Check JavaScript syntax
         run: |
-          test -n "$FORGE_PASSWORD"
-          sshpass -p "$FORGE_PASSWORD" ssh \
-            -p "$FORGE_PORT" \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=/dev/null \
-            "$FORGE_USER@$FORGE_HOST" \
-            'set -e; curl -fsSL http://ox.oddsxray.com/forge-current.sh?deploy=$(date +%s) | bash; systemctl disable --now odx-forge-update.timer >/dev/null 2>&1 || true; curl -s http://127.0.0.1:3001/health'
+          node --check server.js
+          node --check local-forge.js
+
+      - name: Smoke test Ox and embedded Forge
+        run: |
+          node server.js > /tmp/ox.log 2>&1 &
+          PID=$!
+          trap 'cat /tmp/ox.log || true; kill $PID 2>/dev/null || true' EXIT
+          sleep 2
+          curl -fsS http://127.0.0.1:3000/health
+          curl -fsS http://127.0.0.1:3000/api/packages
+          curl -fsS http://127.0.0.1:3000/api/forge/scenarios
+          curl -fsS -X POST http://127.0.0.1:3000/api/forge/attempts -H 'content-type: application/json' -d '{"scenario_id":"s01-the-180-window"}'
