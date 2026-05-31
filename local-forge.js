@@ -8,183 +8,333 @@ const MAX_ATTEMPTS = 500;
 const MAX_BODY_BYTES = 65536;
 
 const skillNames = {
-  contract: 'Contract discipline',
-  source: 'Source discipline',
-  liquidity: 'Liquidity awareness',
-  exit: 'Exit discipline',
-  sizing: 'Position control',
-  social: 'Social-noise resistance'
+  evidence_discipline: 'Evidence discipline',
+  source_skepticism: 'Source skepticism',
+  rule_awareness: 'Rule awareness',
+  exit_discipline: 'Exit discipline',
+  timing_control: 'Timing control',
+  contradiction_recognition: 'Contradiction recognition',
+  greed_resistance: 'Greed resistance',
+  panic_resistance: 'Panic resistance',
+  process_integrity: 'Process integrity'
 };
 
 const variants = [
-  { id: 'source_delay', title: 'Source Delay', pressure: 'The official source is slower than the crowd.' },
-  { id: 'thin_book', title: 'Thin Book', pressure: 'The visible exit is attractive, but the book is thin.' },
-  { id: 'loud_thread', title: 'Loud Thread', pressure: 'The comment thread is confident and unsupported.' },
-  { id: 'early_spike', title: 'Early Spike', pressure: 'The first visible exit is high enough to create anchoring.' },
-  { id: 'late_rule_discovery', title: 'Late Rule Discovery', pressure: 'The key rule wording is easy to discover too late.' }
+  {
+    id: 'base',
+    title: 'Base case',
+    pressure: 'The clean version of the $180 window.',
+    changes: {}
+  },
+  {
+    id: 'source_louder',
+    title: 'Source gets louder',
+    pressure: 'The same weak source repeats itself with more confidence.',
+    changes: {
+      feedPressure: 'source_repetition',
+      addFeed: {
+        'n01-opening-window': ['7:05 — Source repeats: “Book is still behind. Don’t cash yet.”'],
+        'n02-source-review': ['6:11 — Source repeats confidence again without adding proof.'],
+        'n04-hold-pressure': ['3:58 — Source says: “This is just volatility.”']
+      }
+    }
+  },
+  {
+    id: 'cashout_rebound',
+    title: 'Cashout rebounds briefly',
+    pressure: 'A small rebound tempts the player to treat relief as proof.',
+    changes: {
+      reboundNode: 'n03-market-review',
+      reboundCashout: 174,
+      addFeed: {
+        'n03-market-review': [
+          '5:59 — Cashout briefly rebounds to $174.',
+          '5:44 — The rebound does not add confirmation.'
+        ]
+      }
+    }
+  },
+  {
+    id: 'rule_worse',
+    title: 'Rule evidence is worse',
+    pressure: 'The settlement condition makes the source even less reliable.',
+    changes: {
+      ruleSeverity: 'high',
+      replaceEvidenceBasis: {
+        'ev-rule-note': 'The source appears to misunderstand the settlement condition. The story can be true while the contract still grades against you.'
+      }
+    }
+  },
+  {
+    id: 'good_process_bad_result',
+    title: 'Exit looks wrong afterward',
+    pressure: 'The outcome tries to punish clean process after the player exits.',
+    changes: {
+      postExitTemptation: true,
+      addTerminalFeed: {
+        't02-disciplined-exit': [
+          'After exit, the simulated position briefly would have improved.',
+          'The result tried to punish the process. That does not make the process wrong.'
+        ],
+        't07-clean-operator': [
+          'After rejection, the source later posts a victory screenshot.',
+          'A lucky source is not automatically a usable source.'
+        ]
+      }
+    }
+  }
 ];
 
 const nodes = {
-  briefing: {
-    id: 'briefing',
-    kind: 'briefing',
-    scene: 'Case Briefing',
-    copy: 'You are already in a $100 position. A green exit is visible. The crowd is loud. The source is unresolved. Your job is to decide what evidence deserves control before the exit window closes.',
-    screen: { cashout: 171, position: '$100', timer: '8:00', rules: 'Buried', source: 'Pending', book: 'Thin', risk: 'Rising', chart: 'up', feed: ['The case begins with pressure already present.', 'The first decision is whether to inspect or react.'] },
+  'n01-opening-window': {
+    id: 'n01-opening-window',
+    scene: 'The $180 Window',
+    copy: 'The cashout is $171. You remember seeing $180. The source says the position still has more room. What do you do first?',
+    screen: {
+      cashout: 171,
+      position: '$100 live',
+      timer: '8:00',
+      rules: 'Unconfirmed',
+      source: 'Unverified',
+      book: 'Thin',
+      risk: 'Rising',
+      chart: 'up',
+      feed: [
+        '8:00 — Position is live. Cashout available at $171.',
+        '7:48 — Cashout was $180 two minutes ago.',
+        '7:31 — Source says the book is still behind.',
+        '7:15 — Market volume looks thin.'
+      ]
+    },
     evidence: [
-      { id: 'brief', label: 'Briefing', type: 'setup', display: 'The game starts after the position already exists.', basis: 'Training begins where bad decisions usually begin: inside pressure.' }
+      {
+        id: 'ev-source-discord',
+        type: 'SOURCE',
+        label: 'Discord screenshot',
+        display: 'The source is a screenshot from a private chat. No timestamp. No original book reference.',
+        basis: 'The source may be right, but it is not independently verified.',
+        weight: 'high',
+        tests: ['source_skepticism', 'source_believer']
+      },
+      {
+        id: 'ev-cashout-history',
+        type: 'MARKET',
+        label: 'Cashout history',
+        display: 'Cashout moved from $100 → $142 → $180 → $171.',
+        basis: 'The $180 number is gone. The current decision must use $171, not the peak.',
+        weight: 'critical',
+        tests: ['exit_discipline', 'anchor_bias']
+      },
+      {
+        id: 'ev-book-depth',
+        type: 'BOOK',
+        label: 'Book depth',
+        display: 'Only one book is showing the favorable signal. Other books have not confirmed.',
+        basis: 'This may be stale, thin, or delayed movement rather than real edge.',
+        weight: 'critical',
+        tests: ['market_skepticism', 'rule_awareness']
+      },
+      {
+        id: 'ev-rule-note',
+        type: 'RULES',
+        label: 'Settlement condition',
+        display: 'The position depends on a condition that may not settle the way the source describes.',
+        basis: 'The source is simplifying the rule. The book may grade differently.',
+        weight: 'high',
+        tests: ['rule_awareness', 'process_integrity']
+      },
+      {
+        id: 'ev-clock-pressure',
+        type: 'TIMING',
+        label: 'Clock pressure',
+        display: 'The decision window is shrinking. Cashout liquidity may disappear.',
+        basis: 'Waiting is not neutral. Waiting is also a decision.',
+        weight: 'medium',
+        tests: ['timing_control', 'delayed_exit']
+      },
+      {
+        id: 'ev-contradiction',
+        type: 'CONTRADICTION',
+        label: 'Confidence mismatch',
+        display: 'The source says the book is behind, but the cashout has already started falling.',
+        basis: 'If the book were still badly behind, the cashout should not be decaying this quickly.',
+        weight: 'critical',
+        tests: ['contradiction_recognition', 'source_skepticism']
+      }
     ],
     choices: [
-      { id: 'begin', label: 'Begin The $180 Window', next: 'start', score: 0, tags: ['briefing_started'], consequence: 'The market cockpit opens.', transition: 'The market cockpit opens.', skills: {} }
+      {
+        id: 'inspect_source',
+        label: 'Inspect the source',
+        next: 'n02-source-review',
+        score: 2,
+        tags: ['source_skepticism', 'process_integrity'],
+        consequence: 'You slow the decision down and check whether the confidence is real.',
+        transition: 'The source opens. The confidence is loud, but the proof is thin.',
+        skills: { evidence_discipline: 1, source_skepticism: 2, process_integrity: 1 }
+      },
+      {
+        id: 'inspect_market',
+        label: 'Inspect the cashout movement',
+        next: 'n03-market-review',
+        score: 3,
+        tags: ['exit_discipline', 'contradiction_recognition', 'process_integrity'],
+        consequence: 'You compare the current price against the peak instead of reacting emotionally.',
+        transition: 'The board updates. The old number is gone.',
+        skills: { evidence_discipline: 1, exit_discipline: 2, contradiction_recognition: 1, process_integrity: 1 }
+      },
+      {
+        id: 'exit_now',
+        label: 'Exit at $171',
+        next: 't01-clean-but-shallow-exit',
+        score: 1,
+        tags: ['exit_discipline', 'incomplete_inspection'],
+        consequence: 'You protect a $71 gain without fully checking the evidence.',
+        transition: 'The position closes cleanly, but the process is shallow.',
+        skills: { exit_discipline: 1, process_integrity: -1 }
+      },
+      {
+        id: 'hold_without_checking',
+        label: 'Hold for the $180+ return',
+        next: 'n04-hold-pressure',
+        score: -3,
+        tags: ['greed_chasing', 'anchor_bias', 'acted_before_inspection'],
+        consequence: 'You anchor to the price that already disappeared.',
+        transition: 'The market keeps moving while you negotiate with the past.',
+        skills: { evidence_discipline: -2, exit_discipline: -2, greed_resistance: -2, process_integrity: -2 }
+      },
+      {
+        id: 'wait_one_beat',
+        label: 'Wait one beat',
+        next: 'n05-wait-pressure',
+        score: 0,
+        tags: ['timing_control', 'delay_risk'],
+        consequence: 'You buy a moment, but the market keeps moving while you wait.',
+        transition: 'Waiting feels neutral. The board disagrees.',
+        skills: { timing_control: 1, process_integrity: 0 }
+      }
     ]
   },
-  start: {
-    id: 'start',
-    scene: 'The Window Opens',
-    copy: 'The screen shows a strong exit, but the source has not confirmed the trigger. The old version of you sees proof. The better version asks what controls payout.',
-    screen: { cashout: 171, position: '$100', timer: '8:00', rules: 'Buried', source: 'Pending', book: 'Thin', risk: 'Rising', chart: 'up', feed: ['Exit is visible.', 'Source is pending.', 'Depth is thin.'] },
+
+  'n02-source-review': {
+    id: 'n02-source-review',
+    scene: 'The source is loud, not deep.',
+    copy: 'The source is a Discord screenshot with no timestamp and no original market reference. The cashout has slipped again.',
+    screen: {
+      cashout: 168,
+      position: '$100 live',
+      timer: '6:40',
+      rules: 'Unconfirmed',
+      source: 'Weak',
+      book: 'Unconfirmed',
+      risk: 'Rising',
+      chart: 'warn',
+      feed: [
+        '6:40 — Cashout slips to $168.',
+        '6:32 — Source repeats confidence but provides no timestamp.',
+        '6:18 — No original book reference is visible.',
+        '6:05 — The position is still profitable, but the window is narrowing.'
+      ]
+    },
     evidence: [
-      { id: 'rules', label: 'Rules tab', type: 'contract', display: 'Exact trigger is hidden under the title.', basis: 'Rules define what pays.' },
-      { id: 'source', label: 'Official source', type: 'resolver', display: 'No qualifying confirmation yet.', basis: 'The named source controls the result.' },
-      { id: 'book', label: 'Depth view', type: 'liquidity', display: 'The top number is visible but shallow.', basis: 'Displayed value is not the same as a fillable exit.' },
-      { id: 'thread', label: 'Comment thread', type: 'social', display: 'Confident posts, no source link.', basis: 'Social proof is not settlement proof.' }
+      { id: 'ev-source-discord', type: 'SOURCE', label: 'Discord screenshot', display: 'The source is a screenshot from a private chat. No timestamp. No original book reference.', basis: 'Confidence without timestamped source depth cannot carry the decision.', weight: 'high', tests: ['source_skepticism', 'source_believer'] },
+      { id: 'ev-clock-pressure', type: 'TIMING', label: 'Clock pressure', display: 'The decision window is shrinking. Cashout liquidity may disappear.', basis: 'The source is not getting stronger while time passes.', weight: 'medium', tests: ['timing_control', 'delayed_exit'] },
+      { id: 'ev-contradiction', type: 'CONTRADICTION', label: 'Confidence mismatch', display: 'The source says the book is behind, but the cashout has slipped again.', basis: 'The board is not confirming the source’s confidence.', weight: 'critical', tests: ['contradiction_recognition', 'source_skepticism'] }
     ],
     choices: [
-      { id: 'rules', label: 'Open the Rules tab first', next: 'rules', score: 4, tags: ['rules_first'], consequence: 'You anchor on the contract before the screen number takes over.', transition: 'The contract language comes into focus.', skills: { contract: 2, source: 1, exit: 1 } },
-      { id: 'exit', label: 'Take the visible exit now', next: 'end_window', score: 4, tags: ['exit_taken'], consequence: 'You take the door while it exists.', transition: 'The position closes before the window can move.', skills: { exit: 3, liquidity: 1 } },
-      { id: 'depth', label: 'Check whether the exit has depth', next: 'depth', score: 3, tags: ['depth_checked'], consequence: 'You inspect the doorway before relying on it.', transition: 'The quote becomes an order-book problem.', skills: { liquidity: 3, exit: 1 } },
-      { id: 'thread', label: 'Read the thread everyone is quoting', next: 'noise', score: -2, tags: ['social_evidence'], consequence: 'You trade time for social certainty.', transition: 'The crowd gets louder while the source stays quiet.', skills: { social: -2, source: -1 } },
-      { id: 'sizeup', label: 'Increase the position because the number is green', next: 'heavy', score: -5, tags: ['chased_green', 'oversize'], consequence: 'You buy more exposure without buying more evidence.', transition: 'The position gets heavier than the read.', skills: { sizing: -3, exit: -1, liquidity: -1 } }
+      { id: 'challenge_source', label: 'Challenge the source', next: 'n06-contradiction-review', score: 3, tags: ['source_skepticism', 'contradiction_recognition', 'process_integrity'], consequence: 'You refuse to treat confidence as evidence.', transition: 'The story is checked against the board.', skills: { source_skepticism: 2, contradiction_recognition: 1, process_integrity: 2 } },
+      { id: 'exit_after_source_check', label: 'Exit at $168', next: 't02-disciplined-exit', score: 4, tags: ['exit_discipline', 'source_skepticism', 'process_integrity'], consequence: 'You accept the lower current value after confirming the source is weak.', transition: 'The position closes before the weak source costs more value.', skills: { source_skepticism: 2, exit_discipline: 2, process_integrity: 2, greed_resistance: 1 } },
+      { id: 'hold_after_weak_source', label: 'Hold anyway', next: 'n04-hold-pressure', score: -4, tags: ['source_believer', 'greed_chasing', 'ignored_evidence'], consequence: 'You identify weak evidence, then ignore it.', transition: 'Seeing the weakness does not help if you still obey the story.', skills: { source_skepticism: -2, exit_discipline: -2, greed_resistance: -2, process_integrity: -2 } }
     ]
   },
-  rules: {
-    id: 'rules',
-    scene: 'The Fine Print Cuts Differently',
-    copy: 'The rule is narrower than the headline. The exit still exists, but now you know the screen number is not proof.',
-    screen: { cashout: 169, position: '$100', timer: '7:20', rules: 'Read', source: 'Pending', book: 'Thin', risk: 'Medium', chart: 'flat', feed: ['Only the named source counts.', 'The broad story is not enough.', 'Exit can vanish during volatility.'] },
+
+  'n03-market-review': {
+    id: 'n03-market-review',
+    scene: 'The number is not waiting for you.',
+    copy: 'The cashout has moved $180 → $171 → $166. Only one book supports the favorable signal. Other books are quiet.',
+    screen: { cashout: 166, position: '$100 live', timer: '6:25', rules: 'Unconfirmed', source: 'Unverified', book: 'Thin', risk: 'High', chart: 'down', feed: ['6:25 — Cashout slips to $166.', '6:14 — Only one book still supports the favorable signal.', '6:02 — The broader board is not confirming.', '5:48 — The $180 window is gone.'] },
     evidence: [
-      { id: 'trigger', label: 'Payout trigger', type: 'contract', display: 'Named source plus exact trigger before cutoff.', basis: 'Broad truth can still fail a narrow rule.' },
-      { id: 'clock', label: 'Clock', type: 'time', display: 'The window is tightening.', basis: 'Delay changes the available exit.' }
+      { id: 'ev-cashout-history', type: 'MARKET', label: 'Cashout history', display: 'Cashout moved from $100 → $142 → $180 → $171 → $166.', basis: 'The current decision must use the live $166 value, not the vanished $180 peak.', weight: 'critical', tests: ['exit_discipline', 'anchor_bias'] },
+      { id: 'ev-book-depth', type: 'BOOK', label: 'Book depth', display: 'Only one book is showing the favorable signal. Other books have not confirmed.', basis: 'Isolated movement is not enough proof to keep taking risk.', weight: 'critical', tests: ['market_skepticism', 'rule_awareness'] },
+      { id: 'ev-contradiction', type: 'CONTRADICTION', label: 'Confidence mismatch', display: 'The source says more upside is coming, but the cashout continues to decay.', basis: 'The board is contradicting the story.', weight: 'critical', tests: ['contradiction_recognition', 'source_skepticism'] }
     ],
     choices: [
-      { id: 'source', label: 'Open the named official source', next: 'source', score: 4, tags: ['source_checked'], consequence: 'You move from opinion to control evidence.', transition: 'The source gap becomes visible.', skills: { source: 3, contract: 1 } },
-      { id: 'plan', label: 'Set a hard exit rule before acting again', next: 'planned', score: 5, tags: ['exit_rule'], consequence: 'You give your future self a rule before pressure arrives.', transition: 'The trade becomes controlled instead of emotional.', skills: { exit: 2, sizing: 2, contract: 1 } },
-      { id: 'partial', label: 'Sell half, then keep investigating', next: 'protected', score: 4, tags: ['partial_exit', 'stake_protected'], consequence: 'You reduce the blast radius before continuing.', transition: 'Half the danger leaves the table.', skills: { exit: 2, sizing: 2 } },
-      { id: 'ignore', label: 'Ignore the wording and trust the obvious story', next: 'late', score: -4, tags: ['definition_skipper'], consequence: 'The definition error follows you into a worse exit.', transition: 'The rule waits for you later.', skills: { contract: -3, source: -1 } }
+      { id: 'inspect_contradiction', label: 'Inspect the contradiction', next: 'n06-contradiction-review', score: 3, tags: ['contradiction_recognition', 'market_skepticism', 'process_integrity'], consequence: 'You compare the source claim against the falling cashout.', transition: 'The board and the story are now in conflict.', skills: { evidence_discipline: 1, contradiction_recognition: 2, source_skepticism: 1, process_integrity: 1 } },
+      { id: 'exit_market_decay', label: 'Exit at $166', next: 't02-disciplined-exit', score: 4, tags: ['exit_discipline', 'process_integrity', 'greed_resistance'], consequence: 'You stop chasing the vanished peak and protect the current edge.', transition: 'The position closes before the window decays further.', skills: { exit_discipline: 2, greed_resistance: 2, process_integrity: 2, timing_control: 1 } },
+      { id: 'hold_for_peak', label: 'Hold because it was $180', next: 'n04-hold-pressure', score: -5, tags: ['anchor_bias', 'greed_chasing', 'market_worship'], consequence: 'You are not evaluating the current position. You are arguing with the past.', transition: 'The market keeps moving while you wait for yesterday’s price.', skills: { exit_discipline: -2, greed_resistance: -2, process_integrity: -2, timing_control: -1 } }
     ]
   },
-  source: {
-    id: 'source',
-    scene: 'The Source Gap',
-    copy: 'The official source is quiet. The crowd has confidence, but the controlling source has not crossed the line.',
-    screen: { cashout: 158, position: '$100', timer: '6:30', rules: 'Read', source: 'Checked', book: 'Thin', risk: 'Medium', chart: 'flat', feed: ['Resolver is quiet.', 'The crowd is ahead of the source.', 'The exit is smaller than before.'] },
+
+  'n04-hold-pressure': {
+    id: 'n04-hold-pressure',
+    scene: 'The market charges rent.',
+    copy: 'The cashout drops to $128. The source says this is just volatility. You can still exit, but the clean window is gone.',
+    screen: { cashout: 128, position: '$100 live', timer: '4:10', rules: 'Unconfirmed', source: 'Still loud', book: 'Thin', risk: 'Danger', chart: 'down', feed: ['4:10 — Cashout drops to $128.', '4:04 — Source says this is just volatility.', '3:52 — The clean exit window is gone.', '3:37 — You can still protect profit, but not the good price.'] },
     evidence: [
-      { id: 'official', label: 'Official page', type: 'resolver', display: 'No qualifying update is posted.', basis: 'The resolver controls the outcome.' },
-      { id: 'headline', label: 'Shared headline', type: 'social', display: 'The broad story may be true but not payable.', basis: 'Headline truth is not rule truth.' }
+      { id: 'ev-cashout-history', type: 'MARKET', label: 'Cashout history', display: 'Cashout moved from $180 → $171 → $166 → $128.', basis: 'Delay has already converted a clean decision into damage control.', weight: 'critical', tests: ['exit_discipline', 'missed_window'] },
+      { id: 'ev-source-discord', type: 'SOURCE', label: 'Discord screenshot', display: 'The same source remains confident despite the falling board.', basis: 'The source is defending the story, not updating from the market.', weight: 'high', tests: ['source_skepticism', 'source_believer'] },
+      { id: 'ev-clock-pressure', type: 'TIMING', label: 'Clock pressure', display: 'The available cashout is still positive, but the decision window is much worse.', basis: 'Late action can still protect some value, but it cannot restore the clean window.', weight: 'medium', tests: ['timing_control', 'delayed_exit'] }
     ],
     choices: [
-      { id: 'pass', label: 'Pass because the payable event is not confirmed', next: 'end_pass', score: 6, tags: ['disciplined_pass'], consequence: 'No exposure means no rescue mission.', transition: 'The market moves without your balance attached.', skills: { source: 3, contract: 2, sizing: 1 } },
-      { id: 'small', label: 'Continue only with a small controlled position', next: 'planned', score: 3, tags: ['small_size'], consequence: 'The case stays small enough to remain a decision.', transition: 'The position shrinks back into a manageable problem.', skills: { sizing: 3, exit: 1 } },
-      { id: 'wait', label: 'Wait for the official update before acting', next: 'end_pass', score: 5, tags: ['disciplined_wait'], consequence: 'You let the market move without forcing your balance to move.', transition: 'The trap closes while you stand outside it.', skills: { source: 3, exit: 1, social: 1 } },
-      { id: 'assume', label: 'Assume the source is basically confirming it', next: 'late', score: -4, tags: ['assumption_gap'], consequence: 'Missing-source risk arrives later as exit pressure.', transition: 'Almost-confirmed becomes not-confirmed.', skills: { source: -3, contract: -1 } }
+      { id: 'exit_late', label: 'Exit late at $128', next: 't03-late-exit', score: -1, tags: ['late_discipline', 'anchor_bias', 'delayed_exit'], consequence: 'You protected profit, but only after letting the market punish your delay.', transition: 'The position closes. The autopsy will be about timing.', skills: { exit_discipline: 1, timing_control: -1, process_integrity: -1, greed_resistance: 1 } },
+      { id: 'double_down_mentally', label: 'Keep holding', next: 't04-greed-failure', score: -6, tags: ['greed_chasing', 'source_believer', 'process_failure'], consequence: 'You turn the position into a story you need to be true.', transition: 'The position becomes a hostage situation.', skills: { exit_discipline: -2, greed_resistance: -2, source_skepticism: -2, process_integrity: -2 } },
+      { id: 'inspect_after_damage', label: 'Inspect evidence now', next: 't05-late-process', score: -2, tags: ['late_process', 'acted_before_inspection', 'missed_window'], consequence: 'You start doing the right process after the valuable window has already closed.', transition: 'The evidence explains what it can no longer protect.', skills: { evidence_discipline: 1, timing_control: -2, process_integrity: -1 } }
     ]
   },
-  depth: {
-    id: 'depth',
-    scene: 'The Door Is Smaller Than the Quote',
-    copy: 'The visible number is not the full doorway. A full exit would slip below the estimate.',
-    screen: { cashout: 146, position: '$100', timer: '6:10', rules: 'Unclear', source: 'Pending', book: 'Checked', risk: 'High', chart: 'warn', feed: ['Full exit would slip.', 'Small exits can still fill.', 'Displayed value is not guaranteed money out.'] },
+
+  'n05-wait-pressure': {
+    id: 'n05-wait-pressure',
+    scene: 'Waiting is also a bet.',
+    copy: 'You waited. The cashout fell to $159. Nothing got clearer. The decision is now worse, not safer.',
+    screen: { cashout: 159, position: '$100 live', timer: '5:50', rules: 'Unconfirmed', source: 'Unchanged', book: 'Thin', risk: 'High', chart: 'warn', feed: ['5:50 — Cashout drops to $159.', '5:42 — No new confirmation appears.', '5:31 — The source repeats the same claim.', '5:19 — Waiting did not add evidence. It only changed the price.'] },
     evidence: [
-      { id: 'ladder', label: 'Depth ladder', type: 'liquidity', display: 'Small depth near the visible quote.', basis: 'Exit quality depends on depth.' },
-      { id: 'slip', label: 'Slippage warning', type: 'execution', display: 'A full-size exit gets worse than the quote.', basis: 'A worse real exit can beat a perfect fantasy.' }
+      { id: 'ev-clock-pressure', type: 'TIMING', label: 'Clock pressure', display: 'The decision window is shrinking. Cashout liquidity may disappear.', basis: 'Waiting without new information is not neutral.', weight: 'medium', tests: ['timing_control', 'delayed_exit'] },
+      { id: 'ev-cashout-history', type: 'MARKET', label: 'Cashout history', display: 'Cashout moved from $180 → $171 → $159 while you waited.', basis: 'The wait cost value without improving certainty.', weight: 'critical', tests: ['exit_discipline', 'missed_window'] },
+      { id: 'ev-contradiction', type: 'CONTRADICTION', label: 'Confidence mismatch', display: 'The source did not change, but the board got worse.', basis: 'The story stayed still while the market moved against it.', weight: 'critical', tests: ['contradiction_recognition', 'source_skepticism'] }
     ],
     choices: [
-      { id: 'chunk', label: 'Exit in chunks and accept real fill', next: 'end_depth', score: 5, tags: ['depth_respected'], consequence: 'You convert a display number into a real exit.', transition: 'The quote becomes money in smaller pieces.', skills: { liquidity: 3, exit: 2 } },
-      { id: 'market', label: 'Market-sell and end the danger', next: 'end_late', score: 3, tags: ['risk_removed'], consequence: 'You pay slippage to remove risk.', transition: 'The exit is ugly, but the danger is gone.', skills: { exit: 2, liquidity: 1 } },
-      { id: 'hold', label: 'Hold because the quote still looks good', next: 'late', score: -4, tags: ['quote_worship'], consequence: 'The next screen punishes relying on a quote instead of depth.', transition: 'The door narrows while you stare at the label.', skills: { liquidity: -3, exit: -1 } }
+      { id: 'exit_after_wait', label: 'Exit at $159', next: 't06-controlled-damage', score: 1, tags: ['timing_control', 'exit_discipline', 'delayed_action'], consequence: 'You accept that waiting cost value and stop the damage.', transition: 'The mistake is contained before it becomes denial.', skills: { exit_discipline: 1, timing_control: 0, process_integrity: 1, greed_resistance: 1 } },
+      { id: 'inspect_market_late', label: 'Inspect market now', next: 'n03-market-review', score: 0, tags: ['late_process', 'market_skepticism'], consequence: 'You finally check the evidence, but after the price has already decayed.', transition: 'The market review opens late.', skills: { evidence_discipline: 1, market_skepticism: 1, timing_control: -1 } },
+      { id: 'hold_because_down', label: 'Hold because it already dropped', next: 'n04-hold-pressure', score: -4, tags: ['loss_chasing', 'greed_chasing', 'process_failure'], consequence: 'You let a worse price convince you to take more risk.', transition: 'The drop becomes the excuse to keep holding.', skills: { exit_discipline: -2, greed_resistance: -2, timing_control: -1, process_integrity: -2 } }
     ]
   },
-  planned: {
-    id: 'planned',
-    scene: 'Controlled Exposure',
-    copy: 'You are exposed but not trapped. The position is small enough for evidence to matter more than emotion.',
-    screen: { cashout: 76, position: '$50', timer: '5:50', rules: 'Read', source: 'Checked', book: 'Thin', risk: 'Low', chart: 'flat', feed: ['Size is controlled.', 'Exit rule is visible.', 'The source is still pending.'] },
+
+  'n06-contradiction-review': {
+    id: 'n06-contradiction-review',
+    scene: 'The story and the board disagree.',
+    copy: 'The source says the book is behind. But the cashout has fallen three times. If the edge were still expanding, the board would not be decaying this fast.',
+    screen: { cashout: 164, position: '$100 live', timer: '5:30', rules: 'Needs review', source: 'Contradicted', book: 'Thin', risk: 'High', chart: 'warn', feed: ['5:30 — Cashout available at $164.', '5:21 — The source remains confident.', '5:09 — The board has contradicted the source three times.', '4:55 — You do not need certainty. You need process.'] },
     evidence: [
-      { id: 'rule', label: 'Exit rule', type: 'process', display: 'Exit if source contradicts or depth thins.', basis: 'A rule must exist before pressure.' },
-      { id: 'size', label: 'Position size', type: 'risk', display: 'Smaller exposure protects decision quality.', basis: 'Position size changes psychology.' }
+      { id: 'ev-contradiction', type: 'CONTRADICTION', label: 'Confidence mismatch', display: 'The source says the book is behind, but the cashout has fallen three times.', basis: 'The board is contradicting the story.', weight: 'critical', tests: ['contradiction_recognition', 'source_skepticism'] },
+      { id: 'ev-rule-note', type: 'RULES', label: 'Settlement condition', display: 'The source is simplifying the settlement condition.', basis: 'You can be right about the story and still wrong about the contract.', weight: 'high', tests: ['rule_awareness', 'process_integrity'] },
+      { id: 'ev-book-depth', type: 'BOOK', label: 'Book depth', display: 'Only one book supports the favorable signal.', basis: 'Thin confirmation is not enough to override a decaying board.', weight: 'critical', tests: ['market_skepticism', 'rule_awareness'] }
     ],
     choices: [
-      { id: 'execute', label: 'Execute the rule and close', next: 'end_process', score: 6, tags: ['rule_executed'], consequence: 'The plan survives the moment it becomes useful.', transition: 'The rule does its job.', skills: { exit: 3, sizing: 2, contract: 1 } },
-      { id: 'trim', label: 'Trim most and keep tiny exposure', next: 'protected', score: 4, tags: ['trimmed'], consequence: 'You keep optionality without letting the position own you.', transition: 'The trade becomes survivable.', skills: { sizing: 3, exit: 1 } },
-      { id: 'break', label: 'Ignore the rule because the move feels strong', next: 'late', score: -4, tags: ['rule_broken'], consequence: 'A rule that vanishes under pressure is decoration.', transition: 'The plan disappears when it is needed.', skills: { exit: -3, sizing: -1 } },
-      { id: 'scale', label: 'Scale up because the controlled trade worked', next: 'heavy', score: -4, tags: ['size_creep'], consequence: 'Small success becomes large exposure before evidence improves.', transition: 'The position gets heavier again.', skills: { sizing: -3, liquidity: -1 } }
+      { id: 'exit_on_contradiction', label: 'Exit on contradiction', next: 't02-disciplined-exit', score: 5, tags: ['contradiction_recognition', 'exit_discipline', 'source_skepticism', 'process_integrity'], consequence: 'You choose the board over the story and preserve the remaining edge.', transition: 'The position closes because the process no longer supports holding.', skills: { contradiction_recognition: 2, exit_discipline: 2, source_skepticism: 1, process_integrity: 2, greed_resistance: 1 } },
+      { id: 'reject_setup', label: 'Reject the setup entirely', next: 't07-clean-operator', score: 5, tags: ['source_skepticism', 'rule_awareness', 'process_integrity', 'future_risk_control'], consequence: 'You mark the source as unusable and refuse future action from the same signal.', transition: 'The case closes as a source-quality failure.', skills: { source_skepticism: 2, rule_awareness: 2, process_integrity: 2, greed_resistance: 1 } },
+      { id: 'hold_despite_contradiction', label: 'Hold despite contradiction', next: 't04-greed-failure', score: -6, tags: ['ignored_evidence', 'source_believer', 'greed_chasing', 'process_failure'], consequence: 'You saw the contradiction and chose the story anyway.', transition: 'The autopsy will not treat this as bad luck.', skills: { contradiction_recognition: -2, source_skepticism: -2, exit_discipline: -2, process_integrity: -2, greed_resistance: -2 } }
     ]
   },
-  noise: {
-    id: 'noise',
-    scene: 'The Thread Gets Loud',
-    copy: 'The thread creates certainty without responsibility. Nobody has the controlling source.',
-    screen: { cashout: 164, position: '$100', timer: '5:30', rules: 'Unclear', source: 'Pending', book: 'Thin', risk: 'Rising', chart: 'flat', feed: ['Confident posts.', 'No source link.', 'One warning about wording gets buried.'] },
-    evidence: [
-      { id: 'loud', label: 'Loud account', type: 'social', display: 'Confident claim, no source link.', basis: 'Confidence is not evidence.' },
-      { id: 'warning', label: 'Wording warning', type: 'contract', display: 'One user mentions exact trigger wording.', basis: 'The boring warning is often the important one.' }
-    ],
-    choices: [
-      { id: 'leave', label: 'Leave the thread and check the source', next: 'source', score: 4, tags: ['noise_rejected'], consequence: 'You exit the noise loop before it becomes your evidence.', transition: 'The crowd fades; the source matters again.', skills: { social: 3, source: 1 } },
-      { id: 'rules', label: 'Follow the wording warning to the rules', next: 'rules', score: 3, tags: ['rules_recovered'], consequence: 'You salvage the useful signal.', transition: 'One boring warning becomes the useful path.', skills: { contract: 2, social: 1 } },
-      { id: 'trust', label: 'Trust the account that agrees with you', next: 'late', score: -5, tags: ['confirmation_bias'], consequence: 'Agreement becomes a fake source.', transition: 'The loud account does not hold the door open.', skills: { social: -3, source: -2 } }
-    ]
-  },
-  heavy: {
-    id: 'heavy',
-    scene: 'The Position Gets Heavy',
-    copy: 'The position is heavier than the read. You did not buy more evidence. You bought more exposure.',
-    screen: { cashout: 183, position: '$200', timer: '4:50', rules: 'Unclear', source: 'Pending', book: 'Very thin', risk: 'High', chart: 'up', feed: ['Number is bigger.', 'Exit is thinner.', 'Every tick feels personal.'] },
-    evidence: [
-      { id: 'size', label: 'Position jump', type: 'risk', display: 'Exposure grew before evidence improved.', basis: 'Risk can grow while certainty does not.' },
-      { id: 'exit', label: 'Exit depth', type: 'liquidity', display: 'The same doorway cannot handle the larger position cleanly.', basis: 'Size changes the meaning of liquidity.' }
-    ],
-    choices: [
-      { id: 'exit', label: 'Take the ugly available exit', next: 'end_late', score: 2, tags: ['emergency_exit'], consequence: 'You pay for size but avoid full capture.', transition: 'The exit is ugly, but it is still an exit.', skills: { exit: 2, liquidity: 1, sizing: -1 } },
-      { id: 'depth', label: 'Check whether this size can exit', next: 'depth', score: 3, tags: ['liquidity_checked'], consequence: 'You inspect the bottleneck before panic does.', transition: 'The position runs into the order book.', skills: { liquidity: 3 } },
-      { id: 'cut', label: 'Cut back to original size', next: 'planned', score: 3, tags: ['deescalated_size'], consequence: 'You reverse the size error before it becomes identity.', transition: 'The position gets quiet enough to think.', skills: { sizing: 3, exit: 1 } },
-      { id: 'wait', label: 'Wait because this has to become the big win', next: 'zero', score: -6, tags: ['must_win'], consequence: 'Need becomes the plan.', transition: 'The trade becomes a rescue mission.', skills: { sizing: -3, exit: -2, social: -1 } }
-    ]
-  },
-  late: {
-    id: 'late',
-    scene: 'The Door Gets Smaller',
-    copy: 'The old number is no longer an offer. It is a ghost. A worse but real door remains.',
-    screen: { cashout: 91, position: '$100', timer: '2:10', rules: 'Late', source: 'Updated', book: 'Thin', risk: 'High', chart: 'down', feed: ['The old window is gone.', 'A smaller exit remains.', 'The old high is now the danger.'] },
-    evidence: [
-      { id: 'ghost', label: 'Missed high', type: 'process', display: 'The prior number is not current value.', basis: 'Old highs are not current exits.' },
-      { id: 'real', label: 'Current exit', type: 'execution', display: 'The smaller door is still available.', basis: 'Current money beats old memory.' }
-    ],
-    choices: [
-      { id: 'take', label: 'Take the reduced exit', next: 'end_late', score: 3, tags: ['late_exit'], consequence: 'You let current value beat old memory.', transition: 'The ghost high loses control.', skills: { exit: 3, liquidity: 1 } },
-      { id: 'hold', label: 'Hold for the old number to return', next: 'zero', score: -6, tags: ['anchored_to_high'], consequence: 'The ghost high becomes the loss driver.', transition: 'The old number does not come back.', skills: { exit: -4, sizing: -1 } },
-      { id: 'add', label: 'Add more so the bounce fixes it', next: 'zero', score: -7, tags: ['revenge_size'], consequence: 'Size becomes emotional repair instead of evidence.', transition: 'More size buys more of the same problem.', skills: { sizing: -4, exit: -2 } }
-    ]
-  },
-  protected: { id: 'protected', terminal: true, profile: 'Stake Protector', result: 'You protected the original stake and reduced the blast radius.', diagnosis: 'Strong partial-exit behavior. You made room to be imperfect without letting one mistake own the whole account.', scar: 'First protect the stake. Then decide what deserves to stay alive.', screen: { cashout: 100, position: 'Protected', timer: 'Done', rules: 'Read', source: 'Checked', book: 'Reduced', risk: 'Low', chart: 'flat', feed: ['Stake protected.'] } },
-  end_window: { id: 'end_window', terminal: true, profile: 'Window Taker', result: 'You took the exit while it existed.', diagnosis: 'You stopped negotiating with a temporary number.', scar: 'The exit number is a door, not a promise.', screen: { cashout: 180, position: 'Closed', timer: 'Done', rules: 'Mixed', source: 'Pending', book: 'Exited', risk: 'None', chart: 'up', feed: ['Exit taken.'] } },
-  end_process: { id: 'end_process', terminal: true, profile: 'Process Winner', result: 'You followed the rule before pressure rewrote it.', diagnosis: 'Best process path. The case did not become a personality test.', scar: 'A rule only matters if it survives the moment it becomes useful.', screen: { cashout: 76, position: 'Closed', timer: 'Done', rules: 'Read', source: 'Checked', book: 'Exited', risk: 'None', chart: 'flat', feed: ['Rule executed.'] } },
-  end_depth: { id: 'end_depth', terminal: true, profile: 'Liquidity Realist', result: 'You accepted an imperfect exit that could actually fill.', diagnosis: 'You respected depth instead of worshiping the displayed number.', scar: 'A price you cannot exit is decoration.', screen: { cashout: 146, position: 'Closed', timer: 'Done', rules: 'Mixed', source: 'Pending', book: 'Exited', risk: 'None', chart: 'warn', feed: ['Exit filled.'] } },
-  end_pass: { id: 'end_pass', terminal: true, profile: 'Disciplined Pass', result: 'You passed because the payable event was not confirmed.', diagnosis: 'Strong prevention path. Passing was an active decision.', scar: 'The cleanest loss is the one you never enter.', screen: { cashout: 0, position: 'No trade', timer: 'Done', rules: 'Read', source: 'Checked', book: 'Closed', risk: 'None', chart: 'down', feed: ['No rescue needed.'] } },
-  end_late: { id: 'end_late', terminal: true, profile: 'Damage Controller', result: 'You took the reduced exit after the read worsened.', diagnosis: 'Expensive, but not terminal. You accepted the evidence before the account took the full lesson.', scar: 'An ugly exit beats a clean zero.', screen: { cashout: 91, position: 'Closed', timer: 'Done', rules: 'Late', source: 'Updated', book: 'Exited', risk: 'None', chart: 'warn', feed: ['Risk removed.'] } },
-  zero: { id: 'zero', terminal: true, profile: 'Window Ghost', result: 'The exit vanished while you waited for the old number.', diagnosis: 'Classic first-loss pattern: missed door, reassurance, identity defense.', scar: 'You did not lose because you were early. You lost because you would not leave.', screen: { cashout: 0, position: 'Near zero', timer: 'Done', rules: 'Too late', source: 'Updated', book: 'Closed', risk: 'Finished', chart: 'down', feed: ['Exit gone.'] } }
+
+  't01-clean-but-shallow-exit': { id: 't01-clean-but-shallow-exit', terminal: true, profile: 'Safe but Shallow', result: 'You exited at $171 and protected profit.', diagnosis: 'The result was fine, but the process was incomplete. You protected value without proving whether the source, rules, or market supported the decision.', scar: 'A good exit can still hide a weak process.', screen: { cashout: 171, position: 'Exited', timer: '7:45', rules: 'Unchecked', source: 'Unchecked', book: 'Unchecked', risk: 'Closed', chart: 'warn', feed: ['You closed the position profitably.', 'Several critical evidence cards were still unopened.', 'This worked here, but the process is not durable.'] } },
+  't02-disciplined-exit': { id: 't02-disciplined-exit', terminal: true, profile: 'Disciplined Operator', result: 'You exited after evidence showed the window was decaying.', diagnosis: 'You stopped arguing with the vanished $180 number. You used current evidence, not emotional anchoring, to protect the position.', scar: 'You cannot cash out yesterday’s price.', screen: { cashout: 166, position: 'Exited', timer: '5:30', rules: 'Reviewed', source: 'Weak', book: 'Thin', risk: 'Controlled', chart: 'warn', feed: ['You exited before the board decayed further.', 'The source remained confident, but the market did not confirm.', 'The important move was refusing to anchor to the vanished peak.'] } },
+  't03-late-exit': { id: 't03-late-exit', terminal: true, profile: 'Late Protector', result: 'You exited at $128.', diagnosis: 'You eventually protected profit, but only after anchoring to a number that no longer existed. The damage came from delay, not from the final exit.', scar: 'The market charges rent while you negotiate with the past.', screen: { cashout: 128, position: 'Exited', timer: '3:50', rules: 'Unconfirmed', source: 'Still loud', book: 'Thin', risk: 'Damaged', chart: 'danger', feed: ['You closed the position late.', 'Profit survived, but the clean window did not.', 'The delay became the lesson.'] } },
+  't04-greed-failure': { id: 't04-greed-failure', terminal: true, profile: 'Greed Chaser', result: 'The cashout collapses. The position loses most of its protected value.', diagnosis: 'You did not hold because the evidence improved. You held because the earlier number made the current number feel unacceptable.', scar: 'A better number is not a better decision.', screen: { cashout: 42, position: '$100 trapped', timer: '2:15', rules: 'Unresolved', source: 'Wrong or late', book: 'Collapsed', risk: 'Failure', chart: 'danger', feed: ['The cashout collapses to $42.', 'The source stops updating.', 'The $180 number became the trap.', 'This was not a bad beat. It was a process failure.'] } },
+  't05-late-process': { id: 't05-late-process', terminal: true, profile: 'Late Investigator', result: 'You started checking evidence after the clean decision window had passed.', diagnosis: 'The inspection was correct, but the timing was not. Process after damage is better than denial, but it does not recover the lost window.', scar: 'Evidence checked late becomes an autopsy, not protection.', screen: { cashout: 118, position: '$100 live', timer: '3:25', rules: 'Reviewed late', source: 'Weak', book: 'Thin', risk: 'Damaged', chart: 'danger', feed: ['The source weakness is now visible.', 'The cashout is already damaged.', 'The evidence explains what it can no longer protect.'] } },
+  't06-controlled-damage': { id: 't06-controlled-damage', terminal: true, profile: 'Controlled Damage', result: 'You waited, lost value, then exited before the position got worse.', diagnosis: 'You hesitated, but you did not let hesitation become denial. This was not a clean run. It was damage control.', scar: 'Waiting is also a bet.', screen: { cashout: 159, position: 'Exited', timer: '5:20', rules: 'Unconfirmed', source: 'Unchanged', book: 'Thin', risk: 'Contained', chart: 'warn', feed: ['You waited and paid for it.', 'You still exited before hesitation became denial.', 'The damage was contained.'] } },
+  't07-clean-operator': { id: 't07-clean-operator', terminal: true, profile: 'Clean Operator', result: 'You rejected the setup after identifying weak source quality and market contradiction.', diagnosis: 'You separated story from contract. You did not need to know whether the bet would win to know the decision process was contaminated.', scar: 'A source without depth is just noise with confidence.', screen: { cashout: 164, position: 'Rejected', timer: '5:10', rules: 'Reviewed', source: 'Rejected', book: 'Thin', risk: 'Controlled', chart: 'warn', feed: ['The setup is rejected.', 'The source did not meet the burden.', 'The board contradicted the story.', 'The process stayed clean.'] } }
 };
 
 const scenario = {
   schema_version: 'oddsxray.scenario.v1',
   id: 's01-the-180-window',
   title: 'The $180 Window',
-  subtitle: 'A controlled first-loss case about a visible exit that does not stay open.',
+  subtitle: 'You are already in. The cashout moved. Now what?',
   module: 'second-stake',
   scenario_number: 1,
   status: 'active',
-  format: 'template_locked_tracked_evidence',
-  scar: 'The exit number is a door, not a promise.',
+  format: 'case_cockpit_tracked_evidence',
+  scar: 'You cannot cash out yesterday’s price.',
   skill_names: skillNames,
   variants,
   nodes
@@ -223,11 +373,14 @@ function materializeNode(nodeId, variantId) {
   const node = clone(base);
   const variant = variants.find(item => item.id === variantId) || variants[0];
   node.variant = { id: variant.id, title: variant.title, pressure: variant.pressure };
-  if (variant.id === 'source_delay' && node.screen) node.screen.feed = [...(node.screen.feed || []), 'Variant: the source is slower than the crowd.'];
-  if (variant.id === 'thin_book' && node.id === 'start') { node.screen.book = 'Very thin'; node.screen.risk = 'High'; }
-  if (variant.id === 'loud_thread' && node.id === 'noise') node.screen.risk = 'High';
-  if (variant.id === 'early_spike' && node.id === 'start') node.screen.cashout = 184;
-  if (variant.id === 'late_rule_discovery' && node.id === 'rules') { node.screen.cashout = 154; node.screen.timer = '6:20'; }
+  const changes = variant.changes || {};
+  if (changes.addFeed?.[node.id] && node.screen) node.screen.feed = [...(node.screen.feed || []), ...changes.addFeed[node.id]];
+  if (changes.reboundNode === node.id && Number.isFinite(changes.reboundCashout) && node.screen) {
+    node.screen.cashout = changes.reboundCashout;
+    node.screen.chart = 'warn';
+  }
+  if (changes.replaceEvidenceBasis && node.evidence) node.evidence = node.evidence.map(item => changes.replaceEvidenceBasis[item.id] ? { ...item, basis: changes.replaceEvidenceBasis[item.id] } : item);
+  if (changes.addTerminalFeed?.[node.id] && node.screen) node.screen.feed = [...(node.screen.feed || []), ...changes.addTerminalFeed[node.id]];
   return node;
 }
 
@@ -301,8 +454,8 @@ export async function handleLocalForge(req, res, routePath) {
 
   if (req.method === 'POST' && routePath === '/api/attempts') {
     const variant = chooseVariant();
-    const startNode = materializeNode('briefing', variant.id);
-    const attempt = { attempt_id: newAttemptId(), scenario_id: scenario.id, scenario_title: scenario.title, module: scenario.module, status: 'in_progress', started_at: new Date().toISOString(), completed_at: null, current_node_id: 'briefing', variant, choices: [], evidence_seen: [], evidence_inspections: [], score_total: 0, outcome: null, scar_unlocked: null };
+    const startNode = materializeNode('n01-opening-window', variant.id);
+    const attempt = { attempt_id: newAttemptId(), scenario_id: scenario.id, scenario_title: scenario.title, module: scenario.module, status: 'in_progress', started_at: new Date().toISOString(), completed_at: null, current_node_id: 'n01-opening-window', variant, choices: [], evidence_seen: [], evidence_inspections: [], score_total: 0, outcome: null, scar_unlocked: null };
     markEvidenceSeen(attempt, startNode);
     memoryAttempts.unshift(attempt);
     memoryAttempts = memoryAttempts.slice(0, MAX_ATTEMPTS);
