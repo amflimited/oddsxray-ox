@@ -1,4 +1,4 @@
-# trigger-bump: force first visible run after workflow creation
+# trigger-bump: publish live verification result to repo
 name: Ox live smoke
 
 on:
@@ -7,11 +7,17 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   ox-live-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
       - name: Wait briefly for Hyperlift deploy
         run: sleep 45
 
@@ -36,3 +42,27 @@ jobs:
           grep -q '"build": "OX-013B"' packages.json
           grep -q '"ox_noindex": false' packages.json
           grep -q '"development_visibility": "assistant-verifiable"' packages.json
+
+      - name: Publish smoke result to repo
+        run: |
+          set -euo pipefail
+          mkdir -p ops
+          node - <<'NODE'
+          const fs = require('fs');
+          const health = JSON.parse(fs.readFileSync('health.json', 'utf8'));
+          const packages = JSON.parse(fs.readFileSync('packages.json', 'utf8'));
+          const result = {
+            ok: true,
+            checked_at: new Date().toISOString(),
+            workflow: 'ox-live-smoke',
+            commit: process.env.GITHUB_SHA,
+            health,
+            packages
+          };
+          fs.writeFileSync('ops/ox-live-smoke-result.json', JSON.stringify(result, null, 2) + '\n');
+          NODE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ops/ox-live-smoke-result.json
+          git commit -m "Record Ox live smoke result" || exit 0
+          git push
