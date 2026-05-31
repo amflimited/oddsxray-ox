@@ -94,7 +94,7 @@ function validateChapter() {
   for (const [nodeId, node] of Object.entries(nodes)) {
     if (node.id !== nodeId) errors.push(`Node key/id mismatch: ${nodeId}`);
     if (!node.kind) errors.push(`Node ${nodeId} missing kind.`);
-    if (!node.title) errors.push(`Node ${nodeId} missing title.`);
+    if (!node.terminal && !node.title) errors.push(`Node ${nodeId} missing title.`);
     if (!node.terminal && !Array.isArray(node.choices)) errors.push(`Node ${nodeId} missing choices array.`);
     if (node.terminal && node.choices?.length) errors.push(`Terminal node ${nodeId} has choices.`);
     for (const evidenceId of node.evidence || []) if (!evidenceIds.has(evidenceId)) errors.push(`Node ${nodeId} references missing evidence ${evidenceId}.`);
