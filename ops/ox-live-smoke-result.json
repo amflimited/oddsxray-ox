@@ -1,8 +1,8 @@
 {
   "ok": true,
-  "checked_at": "2026-05-31T17:57:18.706Z",
+  "checked_at": "2026-05-31T20:30:59.171Z",
   "workflow": "ox-live-smoke",
-  "commit": "d7c9ca79a54e004b727c092fc69e5f9c9e0a238d",
+  "commit": "a8cc8507682e98f16b11dbeb1c136b241a83027b",
   "health": {
     "ok": true,
     "app": "Odds X-Ray",
