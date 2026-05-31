@@ -1,0 +1,50 @@
+{
+  "ok": true,
+  "checked_at": "2026-05-31T17:51:35.109Z",
+  "workflow": "ox-live-smoke",
+  "commit": "d4912905b654f8224d670248b60fce77682b8b02",
+  "health": {
+    "ok": true,
+    "app": "Odds X-Ray",
+    "layer": "The Ox",
+    "build": "OX-013B",
+    "status": "online",
+    "role": "development-runtime",
+    "architecture": "single-runtime-hyperlift-for-ox-only",
+    "forge_runtime": "inside-ox",
+    "forge_build": "FORGE-IN-OX-002B",
+    "public_site": "separate-deployment",
+    "noindex": false,
+    "development_visibility": "assistant-verifiable",
+    "packages": "/api/packages"
+  },
+  "packages": {
+    "ok": true,
+    "ox": {
+      "app": "Odds X-Ray",
+      "layer": "The Ox",
+      "build": "OX-013B",
+      "status": "online",
+      "role": "development-runtime"
+    },
+    "forge": {
+      "ok": true,
+      "layer": "The Forge",
+      "build": "FORGE-IN-OX-002B",
+      "status": "online",
+      "runtime": "inside-ox",
+      "active_scenario": "s01-the-180-window",
+      "game_mode": "template_locked_tracked_evidence"
+    },
+    "deploy": {
+      "mode": "ox-hyperlift-only",
+      "manual_commands_required": false,
+      "note": "This Hyperlift app is the Ox development runtime. The public oddsxray.com website remains a separate deployment."
+    },
+    "seo": {
+      "ox_noindex": false,
+      "public_site_location": "separate deployment, not this Hyperlift app",
+      "development_visibility": "assistant-verifiable"
+    }
+  }
+}
