@@ -92,7 +92,7 @@ const server = http.createServer(async (req, res) => {
         },
         seo: {
           ox_noindex: true,
-          public_site_location: "separate from this Hyperlift app"
+          public_site_location: "separate deployment, not this Hyperlift app"
         }
       });
     }
