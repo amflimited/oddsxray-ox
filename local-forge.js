@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 
-export const localForgeBuild = 'FORGE-IN-OX-002A';
+export const localForgeBuild = 'FORGE-IN-OX-002B';
+
 const ATTEMPTS_FILE = './attempts.local.json';
 const MAX_ATTEMPTS = 500;
 const MAX_BODY_BYTES = 65536;
@@ -16,51 +17,11 @@ const skillNames = {
 };
 
 const variants = [
-  {
-    id: 'source_delay',
-    title: 'Source Delay',
-    pressure: 'The official source is slow, but the crowd behaves as if it has already resolved.',
-    node_overrides: {
-      start: { screen: { source: 'Delayed', timer: '8:30' }, feed_add: ['Variant: the resolver is slower than the crowd.'] },
-      source: { screen: { timer: '7:00' }, feed_add: ['The delay makes confidence feel more valuable than evidence.'] }
-    }
-  },
-  {
-    id: 'thin_book',
-    title: 'Thin Book',
-    pressure: 'The visible exit is attractive, but the order book cannot absorb casual size.',
-    node_overrides: {
-      start: { screen: { book: 'Very thin', risk: 'High' }, feed_add: ['Variant: the door is narrower than usual.'] },
-      depth: { screen: { cashout: 132, risk: 'Critical' }, feed_add: ['Depth is worse than the quote first implied.'] }
-    }
-  },
-  {
-    id: 'loud_thread',
-    title: 'Loud Thread',
-    pressure: 'The comment thread is unusually confident and unusually unsupported.',
-    node_overrides: {
-      start: { feed_add: ['Variant: social confidence is louder than source evidence.'] },
-      noise: { screen: { risk: 'High' }, feed_add: ['The loudest account still has no source link.'] }
-    }
-  },
-  {
-    id: 'early_spike',
-    title: 'Early Spike',
-    pressure: 'The first visible exit is unusually high, which makes later normal exits feel like losses.',
-    node_overrides: {
-      start: { screen: { cashout: 184, chart: 'up' }, feed_add: ['Variant: the first number is high enough to create anchoring.'] },
-      late: { screen: { cashout: 84 }, feed_add: ['The old spike is now only a memory.'] }
-    }
-  },
-  {
-    id: 'late_rule_discovery',
-    title: 'Late Rule Discovery',
-    pressure: 'The key rule wording appears after the market has already tempted action.',
-    node_overrides: {
-      start: { screen: { rules: 'Buried' }, feed_add: ['Variant: the rule clue is present but easy to skip.'] },
-      rules: { screen: { cashout: 154, timer: '6:20' }, feed_add: ['The rule read came late enough to cost money.'] }
-    }
-  }
+  { id: 'source_delay', title: 'Source Delay', pressure: 'The official source is slower than the crowd.' },
+  { id: 'thin_book', title: 'Thin Book', pressure: 'The visible exit is attractive, but the book is thin.' },
+  { id: 'loud_thread', title: 'Loud Thread', pressure: 'The comment thread is confident and unsupported.' },
+  { id: 'early_spike', title: 'Early Spike', pressure: 'The first visible exit is high enough to create anchoring.' },
+  { id: 'late_rule_discovery', title: 'Late Rule Discovery', pressure: 'The key rule wording is easy to discover too late.' }
 ];
 
 const nodes = {
@@ -68,9 +29,14 @@ const nodes = {
     id: 'briefing',
     kind: 'briefing',
     scene: 'Case Briefing',
-    copy: 'You are already in a $100 position. A green exit is visible. The crowd is loud. The source is unresolved. Your job is not to be brave. Your job is to decide what evidence deserves control before the exit window closes.',
-    objectives: ['Find what actually resolves the market.', 'Decide whether the visible exit is real enough to take.', 'Avoid turning one position into a rescue mission.'],
-    choices: [{ id: 'begin', label: 'Begin The $180 Window', next: 'start', score: 0, tags: ['briefing_started'], consequence: 'The market cockpit opens.', skills: {} }]
+    copy: 'You are already in a $100 position. A green exit is visible. The crowd is loud. The source is unresolved. Your job is to decide what evidence deserves control before the exit window closes.',
+    screen: { cashout: 171, position: '$100', timer: '8:00', rules: 'Buried', source: 'Pending', book: 'Thin', risk: 'Rising', chart: 'up', feed: ['The case begins with pressure already present.', 'The first decision is whether to inspect or react.'] },
+    evidence: [
+      { id: 'brief', label: 'Briefing', type: 'setup', display: 'The game starts after the position already exists.', basis: 'Training begins where bad decisions usually begin: inside pressure.' }
+    ],
+    choices: [
+      { id: 'begin', label: 'Begin The $180 Window', next: 'start', score: 0, tags: ['briefing_started'], consequence: 'The market cockpit opens.', transition: 'The market cockpit opens.', skills: {} }
+    ]
   },
   start: {
     id: 'start',
@@ -98,8 +64,7 @@ const nodes = {
     screen: { cashout: 169, position: '$100', timer: '7:20', rules: 'Read', source: 'Pending', book: 'Thin', risk: 'Medium', chart: 'flat', feed: ['Only the named source counts.', 'The broad story is not enough.', 'Exit can vanish during volatility.'] },
     evidence: [
       { id: 'trigger', label: 'Payout trigger', type: 'contract', display: 'Named source plus exact trigger before cutoff.', basis: 'Broad truth can still fail a narrow rule.' },
-      { id: 'clock', label: 'Clock', type: 'time', display: 'The window is tightening.', basis: 'Delay changes the available exit.' },
-      { id: 'cashout_note', label: 'Exit note', type: 'execution', display: 'The displayed exit is an estimate, not stored value.', basis: 'An available exit must be taken to become real.' }
+      { id: 'clock', label: 'Clock', type: 'time', display: 'The window is tightening.', basis: 'Delay changes the available exit.' }
     ],
     choices: [
       { id: 'source', label: 'Open the named official source', next: 'source', score: 4, tags: ['source_checked'], consequence: 'You move from opinion to control evidence.', transition: 'The source gap becomes visible.', skills: { source: 3, contract: 1 } },
@@ -115,8 +80,7 @@ const nodes = {
     screen: { cashout: 158, position: '$100', timer: '6:30', rules: 'Read', source: 'Checked', book: 'Thin', risk: 'Medium', chart: 'flat', feed: ['Resolver is quiet.', 'The crowd is ahead of the source.', 'The exit is smaller than before.'] },
     evidence: [
       { id: 'official', label: 'Official page', type: 'resolver', display: 'No qualifying update is posted.', basis: 'The resolver controls the outcome.' },
-      { id: 'headline', label: 'Shared headline', type: 'social', display: 'The broad story may be true but not payable.', basis: 'Headline truth is not rule truth.' },
-      { id: 'timer', label: 'Remaining time', type: 'time', display: 'Every minute makes the exit less dependable.', basis: 'Unresolved time pressure changes the decision.' }
+      { id: 'headline', label: 'Shared headline', type: 'social', display: 'The broad story may be true but not payable.', basis: 'Headline truth is not rule truth.' }
     ],
     choices: [
       { id: 'pass', label: 'Pass because the payable event is not confirmed', next: 'end_pass', score: 6, tags: ['disciplined_pass'], consequence: 'No exposure means no rescue mission.', transition: 'The market moves without your balance attached.', skills: { source: 3, contract: 2, sizing: 1 } },
@@ -137,7 +101,6 @@ const nodes = {
     choices: [
       { id: 'chunk', label: 'Exit in chunks and accept real fill', next: 'end_depth', score: 5, tags: ['depth_respected'], consequence: 'You convert a display number into a real exit.', transition: 'The quote becomes money in smaller pieces.', skills: { liquidity: 3, exit: 2 } },
       { id: 'market', label: 'Market-sell and end the danger', next: 'end_late', score: 3, tags: ['risk_removed'], consequence: 'You pay slippage to remove risk.', transition: 'The exit is ugly, but the danger is gone.', skills: { exit: 2, liquidity: 1 } },
-      { id: 'rules', label: 'Read the rules before deciding', next: 'rules', score: 2, tags: ['process_recovered'], consequence: 'You recover process before the exit gets worse.', transition: 'The cockpit slows down long enough to read.', skills: { contract: 2 } },
       { id: 'hold', label: 'Hold because the quote still looks good', next: 'late', score: -4, tags: ['quote_worship'], consequence: 'The next screen punishes relying on a quote instead of depth.', transition: 'The door narrows while you stare at the label.', skills: { liquidity: -3, exit: -1 } }
     ]
   },
@@ -169,8 +132,7 @@ const nodes = {
     choices: [
       { id: 'leave', label: 'Leave the thread and check the source', next: 'source', score: 4, tags: ['noise_rejected'], consequence: 'You exit the noise loop before it becomes your evidence.', transition: 'The crowd fades; the source matters again.', skills: { social: 3, source: 1 } },
       { id: 'rules', label: 'Follow the wording warning to the rules', next: 'rules', score: 3, tags: ['rules_recovered'], consequence: 'You salvage the useful signal.', transition: 'One boring warning becomes the useful path.', skills: { contract: 2, social: 1 } },
-      { id: 'trust', label: 'Trust the account that agrees with you', next: 'late', score: -5, tags: ['confirmation_bias'], consequence: 'Agreement becomes a fake source.', transition: 'The loud account does not hold the door open.', skills: { social: -3, source: -2 } },
-      { id: 'argue', label: 'Argue while the market moves', next: 'late', score: -5, tags: ['ego_delay'], consequence: 'You spend the exit window trying to win a comment thread.', transition: 'The market keeps moving while you type.', skills: { social: -3, exit: -2 } }
+      { id: 'trust', label: 'Trust the account that agrees with you', next: 'late', score: -5, tags: ['confirmation_bias'], consequence: 'Agreement becomes a fake source.', transition: 'The loud account does not hold the door open.', skills: { social: -3, source: -2 } }
     ]
   },
   heavy: {
@@ -200,7 +162,6 @@ const nodes = {
     ],
     choices: [
       { id: 'take', label: 'Take the reduced exit', next: 'end_late', score: 3, tags: ['late_exit'], consequence: 'You let current value beat old memory.', transition: 'The ghost high loses control.', skills: { exit: 3, liquidity: 1 } },
-      { id: 'read', label: 'Read the rules now', next: 'rules', score: 0, tags: ['late_read'], consequence: 'Late process is still better than no process.', transition: 'The rule finally gets read, but the price has moved.', skills: { contract: 1, exit: -1 } },
       { id: 'hold', label: 'Hold for the old number to return', next: 'zero', score: -6, tags: ['anchored_to_high'], consequence: 'The ghost high becomes the loss driver.', transition: 'The old number does not come back.', skills: { exit: -4, sizing: -1 } },
       { id: 'add', label: 'Add more so the bounce fixes it', next: 'zero', score: -7, tags: ['revenge_size'], consequence: 'Size becomes emotional repair instead of evidence.', transition: 'More size buys more of the same problem.', skills: { sizing: -4, exit: -2 } }
     ]
@@ -230,31 +191,28 @@ const scenario = {
 };
 
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
-function readJson(file, fallback) { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; } }
-function writeJson(file, value) { fs.writeFileSync(file, JSON.stringify(Array.isArray(value) ? value.slice(0, MAX_ATTEMPTS) : value, null, 2)); }
+let memoryAttempts = [];
+try { memoryAttempts = JSON.parse(fs.readFileSync(ATTEMPTS_FILE, 'utf8')); } catch { memoryAttempts = []; }
+function persistAttempts() { try { fs.writeFileSync(ATTEMPTS_FILE, JSON.stringify(memoryAttempts.slice(0, MAX_ATTEMPTS), null, 2)); } catch { /* read-only runtime fallback */ } }
 function send(res, status, body) { res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(body, null, 2)); }
 function newAttemptId() { return `att_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`; }
-function attempts() { return readJson(ATTEMPTS_FILE, []); }
+function attempts() { return memoryAttempts; }
 function chooseVariant() { return variants[Math.floor(Math.random() * variants.length)]; }
 
 function getBody(req) {
   return new Promise((resolve, reject) => {
     let data = '';
     let size = 0;
-    let done = false;
-    const fail = error => { if (!done) { done = true; reject(error); } };
     req.on('data', chunk => {
       size += chunk.length;
-      if (size > MAX_BODY_BYTES) return fail(new Error('Request body too large'));
+      if (size > MAX_BODY_BYTES) reject(new Error('Request body too large'));
       data += chunk;
     });
     req.on('end', () => {
-      if (done) return;
-      done = true;
       if (!data) return resolve({});
       try { resolve(JSON.parse(data)); } catch { reject(new Error('Invalid JSON body')); }
     });
-    req.on('error', fail);
+    req.on('error', reject);
   });
 }
 async function readRequestBody(req, res) { try { return await getBody(req); } catch (error) { send(res, 400, { ok: false, error: error.message }); return null; } }
@@ -264,42 +222,37 @@ function materializeNode(nodeId, variantId) {
   if (!base) return null;
   const node = clone(base);
   const variant = variants.find(item => item.id === variantId) || variants[0];
-  const overlay = variant?.node_overrides?.[nodeId];
-  if (overlay) {
-    if (overlay.screen) node.screen = { ...(node.screen || {}), ...overlay.screen };
-    if (overlay.copy) node.copy = overlay.copy;
-    if (overlay.feed_add && node.screen?.feed) node.screen.feed = [...node.screen.feed, ...overlay.feed_add];
-  }
   node.variant = { id: variant.id, title: variant.title, pressure: variant.pressure };
+  if (variant.id === 'source_delay' && node.screen) node.screen.feed = [...(node.screen.feed || []), 'Variant: the source is slower than the crowd.'];
+  if (variant.id === 'thin_book' && node.id === 'start') { node.screen.book = 'Very thin'; node.screen.risk = 'High'; }
+  if (variant.id === 'loud_thread' && node.id === 'noise') node.screen.risk = 'High';
+  if (variant.id === 'early_spike' && node.id === 'start') node.screen.cashout = 184;
+  if (variant.id === 'late_rule_discovery' && node.id === 'rules') { node.screen.cashout = 154; node.screen.timer = '6:20'; }
   return node;
 }
 
 function markEvidenceSeen(attempt, node) {
-  if (!node || node.terminal || node.kind === 'briefing') return;
+  if (!node || node.terminal) return;
   attempt.evidence_seen ||= [];
   for (const evidence of node.evidence || []) {
-    const exists = attempt.evidence_seen.find(item => item.node_id === node.id && item.evidence_id === evidence.id);
-    if (!exists) attempt.evidence_seen.push({ node_id: node.id, scene: node.scene, evidence_id: evidence.id, label: evidence.label, type: evidence.type, basis: evidence.basis });
+    if (!attempt.evidence_seen.find(item => item.node_id === node.id && item.evidence_id === evidence.id)) {
+      attempt.evidence_seen.push({ node_id: node.id, scene: node.scene, evidence_id: evidence.id, label: evidence.label, type: evidence.type, basis: evidence.basis });
+    }
   }
 }
 function inspectedSet(attempt, nodeId) { return new Set((attempt.evidence_inspections || []).filter(item => item.node_id === nodeId).map(item => item.evidence_id)); }
 function missedEvidenceForNode(attempt, nodeId) { const inspected = inspectedSet(attempt, nodeId); return (attempt.evidence_seen || []).filter(item => item.node_id === nodeId && !inspected.has(item.evidence_id)); }
-
 function emptySkills() { return Object.fromEntries(Object.keys(skillNames).map(key => [key, 0])); }
 function buildSkillReport(attempt) {
   const totals = emptySkills();
   for (const choice of attempt.choices) for (const [skill, value] of Object.entries(choice.skills || {})) totals[skill] = (totals[skill] || 0) + value;
   const rows = Object.entries(totals).map(([key, score]) => ({ key, label: skillNames[key], score }));
-  return {
-    scores: rows,
-    strengths: rows.filter(row => row.score > 0).sort((a, b) => b.score - a.score).slice(0, 3),
-    weaknesses: rows.filter(row => row.score < 0).sort((a, b) => a.score - b.score).slice(0, 3)
-  };
+  return { scores: rows, strengths: rows.filter(r => r.score > 0).sort((a, b) => b.score - a.score).slice(0, 3), weaknesses: rows.filter(r => r.score < 0).sort((a, b) => a.score - b.score).slice(0, 3) };
 }
 function buildOutcome(attempt, terminalNode) {
   const tags = {};
   for (const choice of attempt.choices) for (const tag of choice.tags || []) tags[tag] = (tags[tag] || 0) + 1;
-  const skills = buildSkillReport(attempt);
+  const skillReport = buildSkillReport(attempt);
   return {
     profile: terminalNode.profile,
     result: terminalNode.result,
@@ -307,8 +260,8 @@ function buildOutcome(attempt, terminalNode) {
     scar: terminalNode.scar,
     score_total: attempt.score_total,
     variant: attempt.variant,
-    skill_report: skills,
-    replay_prompt: skills.weaknesses?.[0] ? `Run it again and protect ${skills.weaknesses[0].label.toLowerCase()}.` : 'Run it again and see whether you can keep the process clean.',
+    skill_report: skillReport,
+    replay_prompt: skillReport.weaknesses[0] ? `Run it again and protect ${skillReport.weaknesses[0].label.toLowerCase()}.` : 'Run it again and see whether you can keep the process clean.',
     timeline: attempt.choices.map((choice, index) => ({ move: index + 1, scene: choice.scene, label: choice.label, score: choice.score, tags: choice.tags, consequence: choice.consequence, transition: choice.transition, missed_evidence: missedEvidenceForNode(attempt, choice.node_id) })),
     missed_evidence: (attempt.evidence_seen || []).filter(item => !inspectedSet(attempt, item.node_id).has(item.evidence_id)),
     inspected_evidence: attempt.evidence_inspections || [],
@@ -322,20 +275,11 @@ function compareRecentRuns() {
   const completed = attempts().filter(a => a.status === 'complete').slice(0, 2).map(summarizeAttempt);
   return { available: completed.length >= 2, attempts: completed, note: completed.length >= 2 ? 'Compare score, profile, variant, evidence inspections, and weak skills.' : 'Complete two runs to compare.' };
 }
-
 function validateScenario() {
   const errors = [];
-  const nodeEntries = Object.entries(scenario.nodes);
-  if (!scenario.id || !scenario.title || !scenario.format) errors.push('Scenario metadata is incomplete.');
-  for (const [nodeId, node] of nodeEntries) {
+  for (const [nodeId, node] of Object.entries(scenario.nodes)) {
     if (node.id !== nodeId) errors.push(`Node key/id mismatch: ${nodeId}`);
-    if (!node.scene && node.kind !== 'briefing') errors.push(`Node ${nodeId} missing scene.`);
-    if (!node.copy && !node.terminal) errors.push(`Node ${nodeId} missing copy.`);
-    if (!node.terminal && node.kind !== 'briefing') {
-      const s = node.screen || {};
-      for (const key of ['cashout', 'position', 'timer', 'rules', 'source', 'book', 'risk', 'chart', 'feed']) if (s[key] === undefined) errors.push(`Node ${nodeId} missing screen.${key}.`);
-      if (!Array.isArray(node.evidence) || !node.evidence.length) errors.push(`Node ${nodeId} missing evidence.`);
-    }
+    if (!node.terminal && !node.screen) errors.push(`Node ${nodeId} missing screen.`);
     if (node.terminal && node.choices?.length) errors.push(`Terminal node ${nodeId} has choices.`);
     for (const selected of node.choices || []) {
       if (!selected.next || !scenario.nodes[selected.next]) errors.push(`Choice ${nodeId}.${selected.id} points to missing node ${selected.next}.`);
@@ -344,10 +288,9 @@ function validateScenario() {
       if (!selected.skills) errors.push(`Choice ${nodeId}.${selected.id} missing skills.`);
     }
   }
-  return { ok: errors.length === 0, errors, checked_nodes: nodeEntries.length, checked_variants: variants.length };
+  return { ok: errors.length === 0, errors, checked_nodes: Object.keys(scenario.nodes).length, checked_variants: variants.length };
 }
 const validation = validateScenario();
-if (!validation.ok) throw new Error(`Scenario validation failed: ${validation.errors.join('; ')}`);
 
 export async function handleLocalForge(req, res, routePath) {
   if (routePath === '/health' || routePath === '/api/health') return send(res, 200, { ok: true, layer: 'The Forge', build: localForgeBuild, status: 'online', runtime: 'inside-ox', active_scenario: scenario.id, game_mode: scenario.format, validation });
@@ -359,19 +302,19 @@ export async function handleLocalForge(req, res, routePath) {
   if (req.method === 'POST' && routePath === '/api/attempts') {
     const variant = chooseVariant();
     const startNode = materializeNode('briefing', variant.id);
-    const attempt = { attempt_id: newAttemptId(), scenario_id: scenario.id, scenario_title: scenario.title, module: scenario.module, status: 'in_progress', started_at: new Date().toISOString(), completed_at: null, current_node_id: 'briefing', variant: { id: variant.id, title: variant.title, pressure: variant.pressure }, choices: [], evidence_seen: [], evidence_inspections: [], score_total: 0, outcome: null, scar_unlocked: null };
-    const currentAttempts = attempts();
-    currentAttempts.unshift(attempt);
-    writeJson(ATTEMPTS_FILE, currentAttempts);
-    return send(res, 201, { ok: true, build: localForgeBuild, attempt, node: startNode, scenario_summary: { id: scenario.id, title: scenario.title, scar: scenario.scar, scenario_number: 1, format: scenario.format, variant: attempt.variant } });
+    const attempt = { attempt_id: newAttemptId(), scenario_id: scenario.id, scenario_title: scenario.title, module: scenario.module, status: 'in_progress', started_at: new Date().toISOString(), completed_at: null, current_node_id: 'briefing', variant, choices: [], evidence_seen: [], evidence_inspections: [], score_total: 0, outcome: null, scar_unlocked: null };
+    markEvidenceSeen(attempt, startNode);
+    memoryAttempts.unshift(attempt);
+    memoryAttempts = memoryAttempts.slice(0, MAX_ATTEMPTS);
+    persistAttempts();
+    return send(res, 201, { ok: true, build: localForgeBuild, attempt, node: startNode, scenario_summary: { id: scenario.id, title: scenario.title, scar: scenario.scar, scenario_number: 1, format: scenario.format, variant } });
   }
 
   if (req.method === 'POST' && /^\/api\/attempts\/[^/]+\/evidence$/.test(routePath)) {
     const attemptId = routePath.split('/')[3];
     const body = await readRequestBody(req, res);
     if (body === null) return;
-    const currentAttempts = attempts();
-    const attempt = currentAttempts.find(item => item.attempt_id === attemptId);
+    const attempt = memoryAttempts.find(item => item.attempt_id === attemptId);
     if (!attempt) return send(res, 404, { ok: false, error: 'Attempt not found' });
     if (attempt.status === 'complete') return send(res, 409, { ok: false, error: 'Attempt already complete' });
     if (body.node_id && body.node_id !== attempt.current_node_id) return send(res, 400, { ok: false, error: 'Node mismatch' });
@@ -380,7 +323,7 @@ export async function handleLocalForge(req, res, routePath) {
     if (!evidence) return send(res, 400, { ok: false, error: 'Evidence not valid' });
     attempt.evidence_inspections ||= [];
     if (!attempt.evidence_inspections.find(item => item.node_id === node.id && item.evidence_id === evidence.id)) attempt.evidence_inspections.push({ at: new Date().toISOString(), node_id: node.id, scene: node.scene, evidence_id: evidence.id, label: evidence.label, type: evidence.type, basis: evidence.basis });
-    writeJson(ATTEMPTS_FILE, currentAttempts);
+    persistAttempts();
     return send(res, 200, { ok: true, build: localForgeBuild, attempt, evidence, inspected: true });
   }
 
@@ -388,8 +331,7 @@ export async function handleLocalForge(req, res, routePath) {
     const attemptId = routePath.split('/')[3];
     const body = await readRequestBody(req, res);
     if (body === null) return;
-    const currentAttempts = attempts();
-    const attempt = currentAttempts.find(item => item.attempt_id === attemptId);
+    const attempt = memoryAttempts.find(item => item.attempt_id === attemptId);
     if (!attempt) return send(res, 404, { ok: false, error: 'Attempt not found' });
     if (attempt.status === 'complete') return send(res, 409, { ok: false, error: 'Attempt already complete' });
     if (body.node_id && body.node_id !== attempt.current_node_id) return send(res, 400, { ok: false, error: 'Node mismatch' });
@@ -411,7 +353,7 @@ export async function handleLocalForge(req, res, routePath) {
       attempt.scar_unlocked = result.scar;
       responseNode = { ...nextNode, outcome: result };
     }
-    writeJson(ATTEMPTS_FILE, currentAttempts);
+    persistAttempts();
     return send(res, 200, { ok: true, build: localForgeBuild, attempt, node: responseNode, transition: { title: selected.transition || 'State changes', detail: selected.consequence || null }, complete: attempt.status === 'complete', scar_unlocked: attempt.scar_unlocked });
   }
 
