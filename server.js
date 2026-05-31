@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { handleLocalForge, localForgeBuild } from "./local-forge.js";
 
 const port = process.env.PORT || 3000;
-const build = "OX-013A";
+const build = "OX-013B";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const indexPath = path.join(__dirname, "index.html");
@@ -14,8 +14,7 @@ const indexHtml = fs.readFileSync(indexPath, "utf8");
 function json(res, status, body) {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
-    "cache-control": "no-store",
-    "x-robots-tag": "noindex, nofollow, noarchive"
+    "cache-control": "no-store"
   });
   res.end(JSON.stringify(body, null, 2));
 }
@@ -23,8 +22,7 @@ function json(res, status, body) {
 function text(res, status, body, contentType = "text/plain; charset=utf-8") {
   res.writeHead(status, {
     "content-type": contentType,
-    "cache-control": "no-store",
-    "x-robots-tag": "noindex, nofollow, noarchive"
+    "cache-control": "no-store"
   });
   res.end(body);
 }
@@ -32,8 +30,7 @@ function text(res, status, body, contentType = "text/plain; charset=utf-8") {
 function html(res, status, body) {
   res.writeHead(status, {
     "content-type": "text/html; charset=utf-8",
-    "cache-control": "no-store",
-    "x-robots-tag": "noindex, nofollow, noarchive"
+    "cache-control": "no-store"
   });
   res.end(body);
 }
@@ -42,8 +39,8 @@ const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
 
-    if (url.pathname === "/robots.txt") return text(res, 200, "User-agent: *\nDisallow: /\n");
-    if (url.pathname === "/sitemap.xml") return text(res, 404, "No sitemap here. ox.oddsxray.com is the hidden runtime, not the public site.\n");
+    if (url.pathname === "/robots.txt") return text(res, 200, "User-agent: *\nAllow: /\n");
+    if (url.pathname === "/sitemap.xml") return text(res, 404, "No sitemap here. ox.oddsxray.com is the development runtime, not the public marketing site.\n");
 
     if (url.pathname === "/health") {
       return json(res, 200, {
@@ -52,12 +49,13 @@ const server = http.createServer(async (req, res) => {
         layer: "The Ox",
         build,
         status: "online",
-        role: "hidden-runtime",
+        role: "development-runtime",
         architecture: "single-runtime-hyperlift-for-ox-only",
         forge_runtime: "inside-ox",
         forge_build: localForgeBuild,
         public_site: "separate-deployment",
-        noindex: true,
+        noindex: false,
+        development_visibility: "assistant-verifiable",
         packages: "/api/packages"
       });
     }
@@ -65,7 +63,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === "/api/packages") {
       return json(res, 200, {
         ok: true,
-        ox: { app: "Odds X-Ray", layer: "The Ox", build, status: "online", role: "hidden-runtime" },
+        ox: { app: "Odds X-Ray", layer: "The Ox", build, status: "online", role: "development-runtime" },
         forge: {
           ok: true,
           layer: "The Forge",
@@ -75,8 +73,8 @@ const server = http.createServer(async (req, res) => {
           active_scenario: "s01-the-180-window",
           game_mode: "template_locked_tracked_evidence"
         },
-        deploy: { mode: "ox-hyperlift-only", manual_commands_required: false, note: "This Hyperlift app is only the Ox/runtime surface. The public oddsxray.com website remains a separate deployment." },
-        seo: { ox_noindex: true, public_site_location: "separate deployment, not this Hyperlift app" }
+        deploy: { mode: "ox-hyperlift-only", manual_commands_required: false, note: "This Hyperlift app is the Ox development runtime. The public oddsxray.com website remains a separate deployment." },
+        seo: { ox_noindex: false, public_site_location: "separate deployment, not this Hyperlift app", development_visibility: "assistant-verifiable" }
       });
     }
 
@@ -87,7 +85,7 @@ const server = http.createServer(async (req, res) => {
       return await handleLocalForge(req, res, localPath);
     }
 
-    if (url.pathname === "/api/deploy-target") return json(res, 200, { ok: true, ox_build: build, forge_build: localForgeBuild, deploy_mode: "ox-hyperlift-only", public_site: "separate-deployment", manual_commands_required: false });
+    if (url.pathname === "/api/deploy-target") return json(res, 200, { ok: true, ox_build: build, forge_build: localForgeBuild, deploy_mode: "ox-hyperlift-only", public_site: "separate-deployment", manual_commands_required: false, development_visibility: "assistant-verifiable" });
 
     if (url.pathname === "/" || url.pathname === "/app" || url.pathname.startsWith("/app/")) return html(res, 200, indexHtml);
 
@@ -97,4 +95,4 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(port, "0.0.0.0", () => console.log(`The Ox ${build} running as hidden runtime on port ${port}; local Forge ${localForgeBuild}.`));
+server.listen(port, "0.0.0.0", () => console.log(`The Ox ${build} running as development runtime on port ${port}; local Forge ${localForgeBuild}.`));
