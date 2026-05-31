@@ -1,1 +1,585 @@
-<!-- OX-013B placeholder to test no -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>SETTLED — The Suit</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080807;
+      --paper: #efe6cf;
+      --paper-2: #d8c9a6;
+      --ink: #15120c;
+      --muted: #9e9278;
+      --brass: #c79b45;
+      --red: #9d3329;
+      --green: #5d8a66;
+      --black: #0c0b09;
+      --panel: rgba(21, 18, 12, 0.82);
+      --line: rgba(239, 230, 207, 0.18);
+      --glow: rgba(199, 155, 69, 0.24);
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--paper); }
+    body {
+      background:
+        radial-gradient(circle at 20% 0%, rgba(199, 155, 69, 0.18), transparent 35%),
+        radial-gradient(circle at 100% 20%, rgba(157, 51, 41, 0.16), transparent 30%),
+        linear-gradient(135deg, #050504 0%, #13100b 54%, #070706 100%);
+      overflow-x: hidden;
+    }
+
+    .grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.16;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 34px 34px, 34px 34px;
+      mix-blend-mode: overlay;
+      z-index: 1;
+    }
+
+    .app {
+      position: relative;
+      z-index: 2;
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 22px clamp(14px, 3vw, 34px) 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .seal {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      border: 1px solid rgba(239, 230, 207, 0.32);
+      background: radial-gradient(circle at 35% 30%, #3a2d17, #0a0907 70%);
+      box-shadow: 0 0 34px var(--glow), inset 0 0 0 4px rgba(199,155,69,0.08);
+      display: grid;
+      place-items: center;
+      letter-spacing: -0.08em;
+      color: var(--brass);
+      font-family: Georgia, serif;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+    .kicker { color: var(--brass); text-transform: uppercase; letter-spacing: 0.18em; font-size: 11px; font-weight: 800; }
+    .brand h1 { font-family: Georgia, serif; font-size: clamp(30px, 5vw, 58px); letter-spacing: -0.04em; line-height: 0.9; }
+    .brand p { color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+    .status-pill {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--paper-2);
+      border-radius: 999px;
+      padding: 10px 13px;
+      font-size: 12px;
+      white-space: nowrap;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .case-cover, .rules-card, .panel, .drawer, .autopsy {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(239,230,207,0.08), rgba(239,230,207,0.035));
+      box-shadow: var(--shadow);
+      border-radius: 26px;
+      backdrop-filter: blur(10px);
+    }
+
+    .case-cover {
+      min-height: 250px;
+      padding: clamp(22px, 4vw, 38px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .case-cover::before {
+      content: "CASE 01";
+      position: absolute;
+      right: -20px;
+      bottom: 12px;
+      font-size: clamp(58px, 12vw, 132px);
+      font-weight: 900;
+      color: rgba(239,230,207,0.055);
+      letter-spacing: -0.08em;
+    }
+
+    .case-title {
+      font-family: Georgia, serif;
+      font-size: clamp(44px, 9vw, 112px);
+      line-height: 0.84;
+      letter-spacing: -0.07em;
+      margin-top: 16px;
+      max-width: 760px;
+      position: relative;
+    }
+
+    .case-subtitle {
+      margin-top: 18px;
+      color: var(--paper-2);
+      font-size: clamp(16px, 2.5vw, 22px);
+      max-width: 680px;
+      line-height: 1.35;
+      position: relative;
+    }
+
+    .law {
+      margin-top: 26px;
+      display: inline-flex;
+      max-width: 760px;
+      border-left: 3px solid var(--brass);
+      padding: 12px 14px;
+      background: rgba(0,0,0,0.24);
+      color: var(--paper);
+      font-family: Georgia, serif;
+      font-size: 18px;
+      line-height: 1.35;
+      position: relative;
+    }
+
+    .rules-card { padding: 22px; }
+    .rules-card h2 { font-family: Georgia, serif; font-size: 28px; margin-bottom: 14px; }
+    .rule-list { display: grid; gap: 12px; }
+    .rule {
+      display: grid;
+      grid-template-columns: 26px 1fr;
+      gap: 10px;
+      color: var(--paper-2);
+      font-size: 14px;
+      line-height: 1.4;
+      padding: 10px;
+      border: 1px solid rgba(239,230,207,0.12);
+      border-radius: 16px;
+      background: rgba(0,0,0,0.18);
+    }
+    .num { color: var(--brass); font-weight: 900; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 380px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel { padding: clamp(18px, 3vw, 30px); }
+    .node-label { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .node-type {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid rgba(199,155,69,0.42);
+      color: var(--brass);
+      padding: 5px 9px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .scene-title { font-family: Georgia, serif; font-size: clamp(30px, 5vw, 54px); line-height: 0.95; letter-spacing: -0.045em; }
+    .story {
+      margin-top: 18px;
+      font-size: clamp(17px, 2.7vw, 23px);
+      line-height: 1.52;
+      color: #f3ead5;
+      font-family: Georgia, serif;
+    }
+    .prompt {
+      margin-top: 24px;
+      padding: 16px;
+      border: 1px dashed rgba(199,155,69,0.48);
+      background: rgba(199,155,69,0.09);
+      border-radius: 18px;
+      color: var(--paper);
+      font-weight: 800;
+      line-height: 1.4;
+    }
+
+    .choices { display: grid; gap: 12px; margin-top: 18px; }
+    button {
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+    }
+    .choice {
+      width: 100%;
+      text-align: left;
+      border: 1px solid rgba(239,230,207,0.16);
+      background: linear-gradient(180deg, rgba(239,230,207,0.09), rgba(0,0,0,0.22));
+      border-radius: 18px;
+      padding: 15px;
+      transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+    }
+    .choice:hover, .choice:focus-visible { transform: translateY(-1px); border-color: rgba(199,155,69,0.65); outline: none; background: rgba(199,155,69,0.12); }
+    .choice-title { font-weight: 900; color: var(--paper); line-height: 1.25; }
+    .choice-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+    .tag { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--paper-2); border: 1px solid rgba(239,230,207,0.15); border-radius: 999px; padding: 4px 7px; background: rgba(0,0,0,0.18); }
+    .score-pos { color: #92c998; }
+    .score-neg { color: #d77b6f; }
+
+    .drawer { padding: 18px; position: sticky; top: 16px; }
+    .drawer-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 12px; }
+    .drawer h2 { font-family: Georgia, serif; font-size: 28px; }
+    .evidence-list { display: grid; gap: 10px; max-height: 55vh; overflow: auto; padding-right: 4px; }
+    .evidence-card {
+      border: 1px solid rgba(239,230,207,0.14);
+      border-radius: 18px;
+      background: rgba(0,0,0,0.28);
+      padding: 13px;
+      text-align: left;
+      width: 100%;
+    }
+    .evidence-card.inspected { border-color: rgba(93,138,102,0.8); background: rgba(93,138,102,0.14); }
+    .ev-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .ev-type { color: var(--brass); font-size: 10px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
+    .ev-value { color: var(--paper-2); font-size: 10px; text-transform: uppercase; }
+    .ev-label { color: var(--paper); font-weight: 900; margin-bottom: 6px; }
+    .ev-display { color: var(--paper-2); font-size: 13px; line-height: 1.4; }
+    .ev-finding { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(239,230,207,0.11); color: #f4ead4; font-size: 13px; line-height: 1.42; }
+    .evidence-card.inspected .ev-finding { display: block; }
+
+    .transition {
+      margin: 0 0 18px;
+      display: none;
+      border: 1px solid rgba(199,155,69,0.42);
+      border-radius: 20px;
+      padding: 14px;
+      background: rgba(199,155,69,0.09);
+    }
+    .transition.show { display: block; }
+    .transition h3 { font-size: 14px; color: var(--brass); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; }
+    .transition p { color: var(--paper-2); line-height: 1.45; }
+
+    .autopsy { display: none; padding: clamp(20px, 4vw, 34px); margin-top: 18px; border-color: rgba(157,51,41,0.48); }
+    .autopsy.show { display: block; }
+    .profile { color: var(--brass); text-transform: uppercase; letter-spacing: 0.18em; font-size: 12px; font-weight: 900; }
+    .autopsy h2 { font-family: Georgia, serif; font-size: clamp(34px, 7vw, 72px); line-height: 0.9; margin-top: 10px; }
+    .scar {
+      margin-top: 18px;
+      border-left: 4px solid var(--red);
+      padding: 14px 16px;
+      background: rgba(157,51,41,0.14);
+      font-family: Georgia, serif;
+      font-size: clamp(20px, 4vw, 32px);
+      line-height: 1.2;
+    }
+    .autopsy-list { margin: 20px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+    .autopsy-list li { color: var(--paper-2); line-height: 1.45; padding: 12px; border: 1px solid rgba(239,230,207,0.11); border-radius: 14px; background: rgba(0,0,0,0.2); }
+
+    .footer-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .primary, .ghost {
+      border: 1px solid rgba(199,155,69,0.5);
+      border-radius: 999px;
+      padding: 11px 15px;
+      background: rgba(199,155,69,0.18);
+      color: var(--paper);
+      font-weight: 900;
+    }
+    .ghost { background: transparent; border-color: rgba(239,230,207,0.18); color: var(--paper-2); }
+
+    .source-box { display: none; margin-top: 18px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .source-box.show { display: block; }
+    .source-box a { color: var(--paper-2); }
+
+    .loading, .error {
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.36);
+      padding: 18px;
+      border-radius: 20px;
+      color: var(--paper-2);
+      line-height: 1.45;
+    }
+    .error { border-color: rgba(157,51,41,0.6); color: #f0b0a8; }
+
+    @media (max-width: 920px) {
+      .hero, .layout { grid-template-columns: 1fr; }
+      .drawer { position: relative; top: 0; }
+      .evidence-list { max-height: none; }
+      .status-pill { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="seal">SX</div>
+        <div>
+          <div class="kicker">OddsXRay Casebook Runtime</div>
+          <h1>SETTLED</h1>
+          <p>Build SETTLED-UI-001A · Ox OX-013B · Hyperlift runtime</p>
+        </div>
+      </div>
+      <div id="runtimeStatus" class="status-pill">Checking SETTLED runtime</div>
+    </header>
+
+    <section class="hero">
+      <div class="case-cover">
+        <div class="kicker">Chapter One</div>
+        <h2 class="case-title">The Suit</h2>
+        <p class="case-subtitle">A trader was right about reality and wrong about what paid.</p>
+        <div class="law">The truth does not settle the market. The resolver does.</div>
+      </div>
+      <aside class="rules-card">
+        <div class="kicker">Case Method</div>
+        <h2>Read the resolver.</h2>
+        <div class="rule-list">
+          <div class="rule"><span class="num">01</span><span>Story first. You enter the trader’s mistake before judging it.</span></div>
+          <div class="rule"><span class="num">02</span><span>Evidence second. Inspect what controls settlement, not just what happened.</span></div>
+          <div class="rule"><span class="num">03</span><span>Autopsy last. The game grades process, not lucky payout.</span></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="layout">
+      <div>
+        <div id="transition" class="transition"></div>
+        <section id="casePanel" class="panel">
+          <div class="loading">Loading Chapter One from /api/settled/attempts.</div>
+        </section>
+        <section id="autopsy" class="autopsy"></section>
+      </div>
+
+      <aside class="drawer">
+        <div class="drawer-head">
+          <h2>Evidence</h2>
+          <span id="evidenceCount" class="kicker">0 inspected</span>
+        </div>
+        <div id="evidenceList" class="evidence-list">
+          <div class="loading">Evidence cards appear when the case opens.</div>
+        </div>
+        <div id="sources" class="source-box"></div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const API = "/api/settled";
+    const state = { attempt: null, node: null, chapter: null, inspected: new Set(), lastTransition: null };
+
+    const $ = (id) => document.getElementById(id);
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
+    }
+
+    async function api(path, options = {}) {
+      const response = await fetch(`${API}${path}`, {
+        headers: { "content-type": "application/json", ...(options.headers || {}) },
+        ...options
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) throw new Error(data.error || `Request failed: ${path}`);
+      return data;
+    }
+
+    function setStatus(text) { $("runtimeStatus").textContent = text; }
+
+    async function boot() {
+      try {
+        const health = await api("/health");
+        setStatus(`${health.layer} ${health.build} · validation ${health.validation?.ok ? "OK" : "CHECK"}`);
+        const chapterResult = await api("/chapters/chapter-01-the-suit");
+        state.chapter = chapterResult.chapter;
+        const attemptResult = await api("/attempts", { method: "POST", body: "{}" });
+        state.attempt = attemptResult.attempt;
+        state.node = attemptResult.node;
+        renderAll();
+      } catch (error) {
+        $("casePanel").innerHTML = `<div class="error">SETTLED failed to load: ${escapeHtml(error.message)}</div>`;
+        setStatus("SETTLED runtime error");
+      }
+    }
+
+    function renderAll() {
+      renderTransition();
+      renderNode();
+      renderEvidence();
+      renderSources(false);
+    }
+
+    function renderTransition() {
+      const box = $("transition");
+      if (!state.lastTransition) {
+        box.className = "transition";
+        box.innerHTML = "";
+        return;
+      }
+      box.className = "transition show";
+      box.innerHTML = `<h3>Case movement</h3><p><strong>${escapeHtml(state.lastTransition.title || "State changed")}</strong></p><p>${escapeHtml(state.lastTransition.detail || "")}</p>`;
+    }
+
+    function renderNode() {
+      const node = state.node;
+      if (!node) return;
+      const kind = node.terminal ? "Autopsy" : (node.kind || "Decision");
+
+      if (node.terminal) {
+        renderTerminal(node);
+        return;
+      }
+
+      const choices = (node.choices || []).map(choice => {
+        const scoreClass = Number(choice.score) >= 0 ? "score-pos" : "score-neg";
+        const tags = (choice.tags || []).slice(0, 4).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("");
+        return `
+          <button class="choice" type="button" data-choice="${escapeHtml(choice.id)}">
+            <div class="choice-title">${escapeHtml(choice.label)}</div>
+            <div class="choice-meta"><span class="tag ${scoreClass}">${Number(choice.score) >= 0 ? "+" : ""}${escapeHtml(choice.score)}</span>${tags}</div>
+          </button>
+        `;
+      }).join("");
+
+      $("casePanel").innerHTML = `
+        <div class="node-label"><span class="node-type">${escapeHtml(kind)}</span><span class="kicker">${escapeHtml(state.attempt?.chapter_id || "chapter-01-the-suit")}</span></div>
+        <h2 class="scene-title">${escapeHtml(node.title)}</h2>
+        <p class="story">${escapeHtml(node.story)}</p>
+        <div class="prompt">${escapeHtml(node.prompt || "Choose the next case action.")}</div>
+        <div class="choices">${choices}</div>
+      `;
+
+      document.querySelectorAll("[data-choice]").forEach(button => {
+        button.addEventListener("click", () => choose(button.getAttribute("data-choice")));
+      });
+    }
+
+    function renderEvidence() {
+      const cards = state.node?.evidence_cards || [];
+      $("evidenceCount").textContent = `${state.inspected.size} inspected`;
+      if (!cards.length) {
+        $("evidenceList").innerHTML = `<div class="loading">No active evidence in this scene.</div>`;
+        return;
+      }
+      $("evidenceList").innerHTML = cards.map(card => {
+        const inspected = state.inspected.has(`${state.node.id}:${card.id}`);
+        return `
+          <button class="evidence-card ${inspected ? "inspected" : ""}" type="button" data-evidence="${escapeHtml(card.id)}">
+            <div class="ev-top"><span class="ev-type">${escapeHtml(card.type)}</span><span class="ev-value">${escapeHtml(card.inspection_value)}</span></div>
+            <div class="ev-label">${escapeHtml(card.label)}</div>
+            <div class="ev-display">${escapeHtml(card.display)}</div>
+            <div class="ev-finding"><strong>Finding:</strong> ${escapeHtml(card.finding)}<br><br><strong>Why it matters:</strong> ${escapeHtml(card.why_it_matters)}</div>
+          </button>
+        `;
+      }).join("");
+
+      document.querySelectorAll("[data-evidence]").forEach(button => {
+        button.addEventListener("click", () => inspectEvidence(button.getAttribute("data-evidence")));
+      });
+    }
+
+    async function inspectEvidence(evidenceId) {
+      if (!state.attempt || !state.node) return;
+      const key = `${state.node.id}:${evidenceId}`;
+      if (state.inspected.has(key)) return;
+      try {
+        await api(`/attempts/${state.attempt.attempt_id}/evidence`, {
+          method: "POST",
+          body: JSON.stringify({ node_id: state.node.id, evidence_id: evidenceId })
+        });
+        state.inspected.add(key);
+        renderEvidence();
+      } catch (error) {
+        setStatus(`Evidence error: ${error.message}`);
+      }
+    }
+
+    async function choose(choiceId) {
+      if (!state.attempt || !state.node) return;
+      try {
+        const result = await api(`/attempts/${state.attempt.attempt_id}/choice`, {
+          method: "POST",
+          body: JSON.stringify({ node_id: state.node.id, choice_id: choiceId })
+        });
+        state.attempt = result.attempt;
+        state.node = result.node;
+        state.lastTransition = result.transition;
+        renderAll();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (error) {
+        setStatus(`Choice error: ${error.message}`);
+      }
+    }
+
+    function renderTerminal(node) {
+      $("casePanel").innerHTML = `
+        <div class="node-label"><span class="node-type">Terminal</span><span class="kicker">Case closed</span></div>
+        <h2 class="scene-title">${escapeHtml(node.profile)}</h2>
+        <p class="story">${escapeHtml(node.result)}</p>
+        <div class="prompt">${escapeHtml(node.diagnosis)}</div>
+        <div class="footer-actions">
+          <button class="primary" type="button" id="restart">Open a fresh case file</button>
+          <button class="ghost" type="button" id="toggleSources">Show source appendix</button>
+        </div>
+      `;
+
+      const outcome = node.outcome || {};
+      const autopsyItems = (outcome.autopsy || node.autopsy || []).map(line => `<li>${escapeHtml(line)}</li>`).join("");
+      const skills = (outcome.skill_report || []).slice(0, 5).map(skill => {
+        const scoreClass = Number(skill.score) >= 0 ? "score-pos" : "score-neg";
+        return `<span class="tag ${scoreClass}">${escapeHtml(skill.label)} ${Number(skill.score) >= 0 ? "+" : ""}${escapeHtml(skill.score)}</span>`;
+      }).join("");
+
+      $("autopsy").className = "autopsy show";
+      $("autopsy").innerHTML = `
+        <div class="profile">${escapeHtml(node.profile)}</div>
+        <h2>Behavioral Autopsy</h2>
+        <div class="scar">${escapeHtml(node.scar)}</div>
+        <ul class="autopsy-list">${autopsyItems}</ul>
+        <div class="choice-meta" style="margin-top:18px">${skills}</div>
+      `;
+
+      document.getElementById("restart")?.addEventListener("click", () => location.reload());
+      document.getElementById("toggleSources")?.addEventListener("click", () => renderSources(true));
+      renderEvidence();
+    }
+
+    function renderSources(forceShow) {
+      const box = $("sources");
+      if (!state.chapter?.sources?.length) return;
+      if (!forceShow && !state.node?.terminal) {
+        box.className = "source-box";
+        box.innerHTML = "";
+        return;
+      }
+      box.className = "source-box show";
+      box.innerHTML = `<div class="kicker">Source Appendix</div>` + state.chapter.sources.map(source => `
+        <p><a href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">${escapeHtml(source.publisher)} — ${escapeHtml(source.title)}</a></p>
+      `).join("");
+    }
+
+    boot();
+  </script>
+</body>
+</html>
