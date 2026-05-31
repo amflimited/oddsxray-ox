@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
+    "build": "node -e \"console.log('Ox runtime build step: no static artifact required; npm start runs node server.js')\"",
     "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
