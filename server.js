@@ -9,6 +9,7 @@ const build = "OX-011A";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const indexPath = path.join(__dirname, "index.html");
+const indexHtml = fs.readFileSync(indexPath, "utf8");
 
 function json(res, status, body) {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
@@ -59,7 +60,7 @@ const server = http.createServer(async (req, res) => {
 
     if (url.pathname.startsWith("/api/forge/")) {
       const localPath = url.pathname.replace(/^\/api\/forge/, "/api");
-      return handleLocalForge(req, res, localPath);
+      return await handleLocalForge(req, res, localPath);
     }
 
     if (url.pathname === "/api/deploy-target") {
@@ -67,7 +68,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (url.pathname === "/" || url.pathname.startsWith("/app")) {
-      return html(res, fs.readFileSync(indexPath, "utf8"));
+      return html(res, indexHtml);
     }
 
     return json(res, 404, { ok: false, error: "Route not found", build });

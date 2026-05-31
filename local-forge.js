@@ -17,5 +17,65 @@ end_pass:{id:'end_pass',terminal:true,profile:'Disciplined Pass',result:'You pas
 end_late:{id:'end_late',terminal:true,profile:'Damage Controller',result:'You took the reduced exit after the read worsened.',diagnosis:'Expensive, but not terminal.',scar:'An ugly exit beats a clean zero.',screen:{cashout:91,position:'Closed',timer:'Done',rules:'Late',source:'Updated',book:'Exited',risk:'None',chart:'warn',feed:['Risk removed.']}},
 zero:{id:'zero',terminal:true,profile:'Window Ghost',result:'The exit vanished while you waited for the old number.',diagnosis:'Classic first-loss pattern: missed door, reassurance, identity defense.',scar:'You did not lose because you were early. You lost because you would not leave.',screen:{cashout:0,position:'Near zero',timer:'Done',rules:'Too late',source:'Updated',book:'Closed',risk:'Finished',chart:'down',feed:['Exit gone.']}}
 }};
-function read(p,f){try{return JSON.parse(fs.readFileSync(p,'utf8'))}catch{return f}}function write(p,v){fs.writeFileSync(p,JSON.stringify(v,null,2))}function send(res,c,b){res.writeHead(c,{'content-type':'application/json; charset=utf-8','cache-control':'no-store'});res.end(JSON.stringify(b,null,2))}function getBody(req){return new Promise(r=>{let d='';req.on('data',c=>d+=c);req.on('end',()=>{try{r(d?JSON.parse(d):{})}catch{r({})}})})}function id(){return `att_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`}function list(){return read(ATT,[])}function seen(a,n){if(!n||n.terminal)return;a.evidence_seen||=[];for(const e of n.evidence||[])if(!a.evidence_seen.find(x=>x.node_id===n.id&&x.evidence_id===e.id))a.evidence_seen.push({node_id:n.id,scene:n.scene,evidence_id:e.id,label:e.label,type:e.type,basis:e.basis})}function inspected(a,nid){return new Set((a.evidence_inspections||[]).filter(x=>x.node_id===nid).map(x=>x.evidence_id))}function missed(a,nid){const s=inspected(a,nid);return(a.evidence_seen||[]).filter(x=>x.node_id===nid&&!s.has(x.evidence_id))}function outcome(a,n){const tags={};for(const c of a.choices)for(const t of c.tags||[])tags[t]=(tags[t]||0)+1;return{profile:n.profile,result:n.result,diagnosis:n.diagnosis,scar:n.scar,score_total:a.score_total,timeline:a.choices.map((c,i)=>({move:i+1,scene:c.scene,label:c.label,score:c.score,tags:c.tags,consequence:c.consequence,missed_evidence:missed(a,c.node_id)})),missed_evidence:(a.evidence_seen||[]).filter(e=>!inspected(a,e.node_id).has(e.evidence_id)),inspected_evidence:a.evidence_inspections||[],top_mistakes:Object.entries(tags).map(([tag,count])=>({tag,count})).sort((a,b)=>b.count-a.count)}}
-export async function handleLocalForge(req,res,p){if(p==='/health')return send(res,200,{ok:true,layer:'The Forge',build:localForgeBuild,status:'online',runtime:'inside-ox',active_scenario:scenario.id,game_mode:scenario.format});if(p==='/api/catalog')return send(res,200,{ok:true,build:localForgeBuild,catalog:{module:'second-stake',active_scenario:scenario.id}});if(p==='/api/scenarios')return send(res,200,{ok:true,build:localForgeBuild,scenarios:[{id:scenario.id,title:scenario.title,subtitle:scenario.subtitle,status:'active',scar:scenario.scar,module:scenario.module,scenario_number:1,format:scenario.format}]});if(req.method==='GET'&&p.startsWith('/api/scenarios/'))return send(res,200,{ok:true,build:localForgeBuild,scenario:{...scenario,nodes:Object.values(scenario.nodes)}});if(req.method==='POST'&&p==='/api/attempts'){const n=scenario.nodes.start,a={attempt_id:id(),scenario_id:scenario.id,scenario_title:scenario.title,module:scenario.module,status:'in_progress',started_at:new Date().toISOString(),completed_at:null,current_node_id:'start',choices:[],evidence_seen:[],evidence_inspections:[],score_total:0,outcome:null,scar_unlocked:null};seen(a,n);const xs=list();xs.unshift(a);write(ATT,xs);return send(res,201,{ok:true,build:localForgeBuild,attempt:a,node:n,scenario_summary:{id:scenario.id,title:scenario.title,scar:scenario.scar,scenario_number:1,format:scenario.format}})}if(req.method==='POST'&&/^\/api\/attempts\/[^/]+\/evidence$/.test(p)){const aid=p.split('/')[3],b=await getBody(req),xs=list(),a=xs.find(x=>x.attempt_id===aid);if(!a)return send(res,404,{ok:false,error:'Attempt not found'});const n=scenario.nodes[b.node_id||a.current_node_id],e=(n?.evidence||[]).find(x=>x.id===b.evidence_id);if(!e)return send(res,400,{ok:false,error:'Evidence not valid'});a.evidence_inspections||=[];if(!a.evidence_inspections.find(x=>x.node_id===n.id&&x.evidence_id===e.id))a.evidence_inspections.push({at:new Date().toISOString(),node_id:n.id,scene:n.scene,evidence_id:e.id,label:e.label,type:e.type,basis:e.basis});write(ATT,xs);return send(res,200,{ok:true,build:localForgeBuild,attempt:a,evidence:e,inspected:true})}if(req.method==='POST'&&/^\/api\/attempts\/[^/]+\/choice$/.test(p)){const aid=p.split('/')[3],b=await getBody(req),xs=list(),a=xs.find(x=>x.attempt_id===aid);if(!a)return send(res,404,{ok:false,error:'Attempt not found'});const n=scenario.nodes[b.node_id||a.current_node_id],c=(n?.choices||[]).find(x=>x.id===b.choice_id);if(!c)return send(res,400,{ok:false,error:'Choice not valid'});a.choices.push({at:new Date().toISOString(),node_id:n.id,scene:n.scene,choice_id:c.id,label:c.label,next_node_id:c.next,score:c.score,tags:c.tags,consequence:c.consequence,inspected_before_choice:[...inspected(a,n.id)]});a.score_total+=c.score||0;a.current_node_id=c.next;let next=scenario.nodes[c.next];seen(a,next);if(next?.terminal){const o=outcome(a,next);a.status='complete';a.completed_at=new Date().toISOString();a.outcome=o;a.scar_unlocked=o.scar;next={...next,outcome:o}}write(ATT,xs);return send(res,200,{ok:true,build:localForgeBuild,attempt:a,node:next,complete:a.status==='complete',scar_unlocked:a.scar_unlocked})}if(req.method==='GET'&&p==='/api/attempts')return send(res,200,{ok:true,build:localForgeBuild,attempts:list().slice(0,80).map(a=>({attempt_id:a.attempt_id,scenario_id:a.scenario_id,scenario_title:a.scenario_title,status:a.status,started_at:a.started_at,completed_at:a.completed_at,choices_count:a.choices.length,evidence_inspections_count:(a.evidence_inspections||[]).length,score_total:a.score_total,scar_unlocked:a.scar_unlocked,profile:a.outcome?.profile||null}))});if(req.method==='GET'&&p==='/api/progress'){const xs=list(),done=xs.filter(a=>a.status==='complete');return send(res,200,{ok:true,build:localForgeBuild,progress:{total_attempts:xs.length,completed_attempts:done.length,scars_unlocked:new Set(done.map(a=>a.scar_unlocked).filter(Boolean)).size,evidence_inspections:xs.reduce((n,a)=>n+(a.evidence_inspections||[]).length,0)}})}return send(res,404,{ok:false,error:'Local Forge route not found',build:localForgeBuild,path:p})}
+function read(p,f){try{return JSON.parse(fs.readFileSync(p,'utf8'))}catch{return f}}
+function write(p,v){const trimmed=Array.isArray(v)?v.slice(0,500):v;fs.writeFileSync(p,JSON.stringify(trimmed,null,2))}
+function send(res,c,b){res.writeHead(c,{'content-type':'application/json; charset=utf-8','cache-control':'no-store'});res.end(JSON.stringify(b,null,2))}
+function getBody(req){return new Promise((resolve,reject)=>{let d='',size=0;req.on('data',chunk=>{size+=chunk.length;if(size>65536){req.destroy();return reject(new Error('Request body too large'));}d+=chunk});req.on('end',()=>{if(!d)return resolve({});try{resolve(JSON.parse(d))}catch{reject(new Error('Invalid JSON body'))}});req.on('error',reject)})}
+function id(){return `att_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`}
+function list(){return read(ATT,[])}
+function seen(a,n){if(!n||n.terminal)return;a.evidence_seen||=[];for(const e of n.evidence||[])if(!a.evidence_seen.find(x=>x.node_id===n.id&&x.evidence_id===e.id))a.evidence_seen.push({node_id:n.id,scene:n.scene,evidence_id:e.id,label:e.label,type:e.type,basis:e.basis})}
+function inspected(a,nid){return new Set((a.evidence_inspections||[]).filter(x=>x.node_id===nid).map(x=>x.evidence_id))}
+function missed(a,nid){const s=inspected(a,nid);return(a.evidence_seen||[]).filter(x=>x.node_id===nid&&!s.has(x.evidence_id))}
+function outcome(a,n){const tags={};for(const c of a.choices)for(const t of c.tags||[])tags[t]=(tags[t]||0)+1;return{profile:n.profile,result:n.result,diagnosis:n.diagnosis,scar:n.scar,score_total:a.score_total,timeline:a.choices.map((c,i)=>({move:i+1,scene:c.scene,label:c.label,score:c.score,tags:c.tags,consequence:c.consequence,missed_evidence:missed(a,c.node_id)})),missed_evidence:(a.evidence_seen||[]).filter(e=>!inspected(a,e.node_id).has(e.evidence_id)),inspected_evidence:a.evidence_inspections||[],top_mistakes:Object.entries(tags).map(([tag,count])=>({tag,count})).sort((a,b)=>b.count-a.count)}}
+export async function handleLocalForge(req,res,p){
+  if(p==='/health')return send(res,200,{ok:true,layer:'The Forge',build:localForgeBuild,status:'online',runtime:'inside-ox',active_scenario:scenario.id,game_mode:scenario.format});
+  if(p==='/api/catalog')return send(res,200,{ok:true,build:localForgeBuild,catalog:{module:'second-stake',active_scenario:scenario.id}});
+  if(p==='/api/scenarios')return send(res,200,{ok:true,build:localForgeBuild,scenarios:[{id:scenario.id,title:scenario.title,subtitle:scenario.subtitle,status:'active',scar:scenario.scar,module:scenario.module,scenario_number:1,format:scenario.format}]});
+  if(req.method==='GET'&&p.startsWith('/api/scenarios/'))return send(res,200,{ok:true,build:localForgeBuild,scenario:{...scenario,nodes:Object.values(scenario.nodes)}});
+  if(req.method==='POST'&&p==='/api/attempts'){
+    const n=scenario.nodes.start;
+    const a={attempt_id:id(),scenario_id:scenario.id,scenario_title:scenario.title,module:scenario.module,status:'in_progress',started_at:new Date().toISOString(),completed_at:null,current_node_id:'start',choices:[],evidence_seen:[],evidence_inspections:[],score_total:0,outcome:null,scar_unlocked:null};
+    seen(a,n);const xs=list();xs.unshift(a);write(ATT,xs);
+    return send(res,201,{ok:true,build:localForgeBuild,attempt:a,node:n,scenario_summary:{id:scenario.id,title:scenario.title,scar:scenario.scar,scenario_number:1,format:scenario.format}});
+  }
+  if(req.method==='POST'&&/^\/api\/attempts\/[^/]+\/evidence$/.test(p)){
+    const aid=p.split('/')[3];
+    let b;try{b=await getBody(req)}catch(e){return send(res,400,{ok:false,error:e.message})}
+    const xs=list(),a=xs.find(x=>x.attempt_id===aid);
+    if(!a)return send(res,404,{ok:false,error:'Attempt not found'});
+    if(b.node_id&&b.node_id!==a.current_node_id)return send(res,400,{ok:false,error:'Node mismatch'});
+    const n=scenario.nodes[a.current_node_id];
+    const e=(n?.evidence||[]).find(x=>x.id===b.evidence_id);
+    if(!e)return send(res,400,{ok:false,error:'Evidence not valid'});
+    a.evidence_inspections||=[];
+    if(!a.evidence_inspections.find(x=>x.node_id===n.id&&x.evidence_id===e.id))a.evidence_inspections.push({at:new Date().toISOString(),node_id:n.id,scene:n.scene,evidence_id:e.id,label:e.label,type:e.type,basis:e.basis});
+    write(ATT,xs);
+    return send(res,200,{ok:true,build:localForgeBuild,attempt:a,evidence:e,inspected:true});
+  }
+  if(req.method==='POST'&&/^\/api\/attempts\/[^/]+\/choice$/.test(p)){
+    const aid=p.split('/')[3];
+    let b;try{b=await getBody(req)}catch(e){return send(res,400,{ok:false,error:e.message})}
+    const xs=list(),a=xs.find(x=>x.attempt_id===aid);
+    if(!a)return send(res,404,{ok:false,error:'Attempt not found'});
+    if(a.status==='complete')return send(res,400,{ok:false,error:'Attempt already complete'});
+    if(b.node_id&&b.node_id!==a.current_node_id)return send(res,400,{ok:false,error:'Node mismatch'});
+    const n=scenario.nodes[a.current_node_id];
+    const c=(n?.choices||[]).find(x=>x.id===b.choice_id);
+    if(!c)return send(res,400,{ok:false,error:'Choice not valid'});
+    const next=scenario.nodes[c.next];
+    if(!next)return send(res,500,{ok:false,error:'Scenario routing error',detail:`Unknown node: ${c.next}`});
+    a.choices.push({at:new Date().toISOString(),node_id:n.id,scene:n.scene,choice_id:c.id,label:c.label,next_node_id:c.next,score:c.score,tags:c.tags,consequence:c.consequence});
+    a.score_total+=(c.score||0);a.current_node_id=c.next;
+    seen(a,next);
+    let responseNode=next;
+    if(next.terminal){const o=outcome(a,next);a.status='complete';a.completed_at=new Date().toISOString();a.outcome=o;a.scar_unlocked=o.scar;responseNode={...next,outcome:o}}
+    write(ATT,xs);
+    return send(res,200,{ok:true,build:localForgeBuild,attempt:a,node:responseNode,complete:a.status==='complete',scar_unlocked:a.scar_unlocked});
+  }
+  if(req.method==='GET'&&p==='/api/attempts')return send(res,200,{ok:true,build:localForgeBuild,attempts:list().slice(0,80).map(a=>({attempt_id:a.attempt_id,scenario_id:a.scenario_id,scenario_title:a.scenario_title,status:a.status,started_at:a.started_at,completed_at:a.completed_at,choices_count:a.choices.length,evidence_inspections_count:(a.evidence_inspections||[]).length,score_total:a.score_total,scar_unlocked:a.scar_unlocked,profile:a.outcome?.profile||null}))});
+  if(req.method==='GET'&&p==='/api/progress'){
+    const xs=list(),done=xs.filter(a=>a.status==='complete');
+    return send(res,200,{ok:true,build:localForgeBuild,progress:{total_attempts:xs.length,completed_attempts:done.length,scars_unlocked:new Set(done.map(a=>a.scar_unlocked).filter(Boolean)).size,evidence_inspections:xs.reduce((n,a)=>n+(a.evidence_inspections||[]).length,0)}});
+  }
+  return send(res,404,{ok:false,error:'Local Forge route not found',build:localForgeBuild,path:p});
+}
