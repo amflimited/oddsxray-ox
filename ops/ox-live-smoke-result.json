@@ -1,8 +1,8 @@
 {
   "ok": true,
-  "checked_at": "2026-05-31T20:30:59.171Z",
+  "checked_at": "2026-05-31T21:07:26.046Z",
   "workflow": "ox-live-smoke",
-  "commit": "a8cc8507682e98f16b11dbeb1c136b241a83027b",
+  "commit": "3596d56c496524d0eccf5318ef8e1e14355dcf09",
   "health": {
     "ok": true,
     "app": "Odds X-Ray",
@@ -13,6 +13,8 @@
     "architecture": "single-runtime-hyperlift-for-ox-only",
     "forge_runtime": "inside-ox",
     "forge_build": "FORGE-IN-OX-002B",
+    "settled_runtime": "inside-ox",
+    "settled_build": "SETTLED-IN-OX-001A",
     "public_site": "separate-deployment",
     "noindex": false,
     "development_visibility": "assistant-verifiable",
@@ -35,6 +37,16 @@
       "runtime": "inside-ox",
       "active_scenario": "s01-the-180-window",
       "game_mode": "template_locked_tracked_evidence"
+    },
+    "settled": {
+      "ok": true,
+      "layer": "SETTLED",
+      "build": "SETTLED-IN-OX-001A",
+      "status": "online",
+      "runtime": "inside-ox",
+      "active_chapter": "chapter-01-the-suit",
+      "format": "interactive_casebook",
+      "routes": "/api/settled"
     },
     "deploy": {
       "mode": "ox-hyperlift-only",
