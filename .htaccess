@@ -1,0 +1,10 @@
+# OddsXray homepage default-document fix
+# OX-DIRECTORY-INDEX-GITHUB-008
+
+DirectoryIndex index.html index.php default.html default.htm
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^$ index.html [L]
+</IfModule>
